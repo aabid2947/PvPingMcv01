@@ -348,9 +348,9 @@ export default function OriginMC() {
                 </Button> */}
 
                 <button
-  className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-1.5 px-10 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 uppercase tracking-wide shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
+  className="w-64 h-10 inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-1.5 px-10 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 uppercase tracking-wide shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
   style={{
-    clipPath: "polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)"
+    clipPath: "polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%)"
   }}
 >
   PLAY NOW
