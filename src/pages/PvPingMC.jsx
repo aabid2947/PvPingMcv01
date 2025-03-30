@@ -3,7 +3,7 @@ import { FiTarget } from 'react-icons/fi';
 
 const PvPingMC = () => {
   return (
-    <div className="w-full bg-[#0D1117] text-white min-h-screen">
+    <div className="w-full bg-[#13141d] text-white min-h-screen">
       <div className="container mx-auto px-4 py-12">
         <div className="mb-16 flex items-center gap-3">
           <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">

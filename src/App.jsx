@@ -28,7 +28,7 @@ const Footer = () => {
               MINECRAFT IS © MOJANG STUDIOS 2009-2023. WE ARE NOT AFFILIATED WITH MOJANG STUDIOS.
             </p>
           </div>
-          
+
           <div className="flex items-center">
             <img src={pvping} alt="OriginMC Logo" className="h-6 w-auto" />
           </div>
@@ -49,7 +49,7 @@ function App() {
           <Route path="/" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <Home />
               </div>
             </>
@@ -57,7 +57,7 @@ function App() {
           <Route path="/blog" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <BlogOverview />
               </div>
             </>
@@ -65,7 +65,7 @@ function App() {
           <Route path="/blog/:id" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <BlogDetail />
               </div>
             </>
@@ -73,7 +73,7 @@ function App() {
           <Route path="/store" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <Store />
               </div>
             </>
@@ -81,7 +81,7 @@ function App() {
           <Route path="/vote" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <Vote />
               </div>
             </>
@@ -89,7 +89,7 @@ function App() {
           <Route path="/rules" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <Rules />
               </div>
             </>
@@ -97,7 +97,7 @@ function App() {
           <Route path="/pvpingmc" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <PvPingMC />
               </div>
             </>
@@ -105,7 +105,7 @@ function App() {
           <Route path="/originpass" element={
             <>
               <HeroSection />
-              <div className="mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px]">
                 <OriginPass />
               </div>
             </>

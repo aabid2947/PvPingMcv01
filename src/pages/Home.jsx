@@ -152,7 +152,7 @@ export default function OriginMC() {
           </div>
         )}
       </div>
-      <JoinDiscord />
+      {/* <JoinDiscord /> */}
       {/* Discord Community Section - Updated to match the image */}
       <div className="container mx-auto md:w-4/5 px-4 py-8 md:py-16">
   <div className="bg-[#13141d] border border-gray-800 rounded-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-lg">

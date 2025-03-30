@@ -97,7 +97,7 @@ const BlogDetail = () => {
   };
 
   return (
-    <div className="w-full bg-gradient-to-b from-[#0a0d14] to-[#151d28] text-white min-h-screen pt-6">
+    <div className="w-full bg-[#13141d] text-white min-h-screen pt-6">
       <div className="container mx-auto md:w-4/5 px-4 py-6">
         {/* Back Button */}
         <Link 

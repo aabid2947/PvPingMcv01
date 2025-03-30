@@ -12,7 +12,6 @@ export const getBlogPostById = async (id) => {
 // Store service (Tebex integration)
 export const getStoreProducts = async () => {
   try {
-    let response;
     const apiKey = import.meta.env.VITE_TEBEX_API_KEY;
     
     if (!apiKey) {
@@ -21,34 +20,56 @@ export const getStoreProducts = async () => {
     }
     
     try {
-      // First try the direct API call
-      response = await axios.get('https://plugin.tebex.io/packages', {
-        headers: {
-          'X-Authorization': apiKey
-        }
+      // Fetch all categories with packages included
+      const response = await fetch(`https://headless.tebex.io/api/accounts/${apiKey}/categories?includePackages=1`, {
+        method: 'GET',
       });
-    } catch (apiError) {
-      console.error('Direct Tebex API call failed, trying fallback:', apiError);
       
-      // If that fails (likely due to CORS), use a fallback with mock data
-      // In a real application, this would be a server-side proxy
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract packages from all categories
+      let allPackages = [];
+      
+      if (data && Array.isArray(data)) {
+        data.forEach(category => {
+          if (category.packages && Array.isArray(category.packages)) {
+            // Add category info to each package
+            const packagesWithCategory = category.packages.map(pkg => ({
+              ...pkg,
+              category: category.name.toLowerCase(),
+              category_id: category.id
+            }));
+            
+            allPackages = [...allPackages, ...packagesWithCategory];
+          }
+        });
+      }
+      
+      if (allPackages.length > 0) {
+        // Transform API response to our application format
+        return allPackages.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: (item.price.amount / 100).toFixed(2), // Convert cents to dollars
+          description: item.description || 'No description available',
+          category: item.category || 'other',
+          category_id: item.category_id || null,
+          image: item.image || null,
+          url: item.url || '#',
+          bestseller: item.sales_count > 10 // Mark as bestseller if it has more than 10 sales
+        }));
+      }
+      
+      console.warn('No packages found in Tebex API response, using mock data');
+      return getMockStoreProducts();
+    } catch (apiError) {
+      console.error('Tebex API call failed:', apiError);
       return getMockStoreProducts();
     }
-    
-    if (response.data && Array.isArray(response.data)) {
-      // Transform API response to our application format
-      return response.data.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: (item.price.amount / 100).toFixed(2), // Convert cents to dollars
-        description: item.description || 'No description available',
-        category: item.category?.name?.toLowerCase() || 'other',
-        image: item.image || null,
-        url: item.url || '#',
-        bestseller: item.sales > 10 // Mark as bestseller if it has more than 10 sales
-      }));
-    }
-    return getMockStoreProducts();
   } catch (error) {
     console.error('Error fetching store products:', error);
     return getMockStoreProducts();
@@ -157,17 +178,21 @@ export const getTebexCategories = async () => {
       return [];
     }
     
-    const response = await axios.get('https://plugin.tebex.io/categories', {
-      headers: {
-        'X-Authorization': apiKey
-      }
+    const response = await fetch(`https://headless.tebex.io/api/accounts/${apiKey}/categories`, {
+      method: 'GET',
     });
     
-    if (response.data && Array.isArray(response.data)) {
-      return response.data.map(category => ({
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && Array.isArray(data)) {
+      return data.map(category => ({
         id: category.id,
         name: category.name,
-        order: category.order,
+        order: category.order || 0,
         subcategories: category.subcategories || []
       }));
     }
@@ -188,13 +213,16 @@ export const getPackageDetails = async (packageId) => {
       return null;
     }
     
-    const response = await axios.get(`https://plugin.tebex.io/package/${packageId}`, {
-      headers: {
-        'X-Authorization': apiKey
-      }
+    const response = await fetch(`https://headless.tebex.io/api/accounts/${apiKey}/packages/${packageId}`, {
+      method: 'GET',
     });
-    console.log(response.data);
-    return response.data;
+    
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error(`Error fetching package details for ID ${packageId}:`, error);
     return null;

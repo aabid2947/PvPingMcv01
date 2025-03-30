@@ -45,7 +45,7 @@ const BlogCard = ({ post }) => {
 
   return (
     <Link to={`/blog/${post.id}`} className="block">
-      <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20">
+      <div className="bg-[#13141d] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20">
         <div className="h-48 relative">
           <img 
             src={post.thumbnail ? post.thumbnail : storeImg} 
@@ -108,7 +108,7 @@ const BlogOverview = () => {
   }, []);
 
   return (
-    <div className="w-full bg-gradient-to-b from-[#0c0c14] to-[#13141d] text-white min-h-screen pb-16">
+    <div className="w-full bg-[#13141d] text-white min-h-screen pb-16">
       <div className="container mx-auto md:w-4/5 px-4 py-12">
         <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">

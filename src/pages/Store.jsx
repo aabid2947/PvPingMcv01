@@ -27,7 +27,7 @@ const StoreItem = ({ id, name, price, description, category, image, url, bestsel
   };
 
   return (
-    <div className="bg-[#0c0c14] rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105">
+    <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105">
       <div className="relative">
         <div className="h-48 bg-[#1F2937]">
           <img 
@@ -73,6 +73,23 @@ const StoreItem = ({ id, name, price, description, category, image, url, bestsel
                     <p>No detailed information available</p>
                   )}
                 </div>
+                
+                {details.availability && details.availability.type !== 'standard' && (
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold text-amber-400">
+                      {details.availability.type === 'limited' ? 'Limited Availability!' : 'Special Offer!'}
+                    </p>
+                    {details.availability.message && (
+                      <p className="text-xs text-gray-400">{details.availability.message}</p>
+                    )}
+                  </div>
+                )}
+                
+                {details.requires_player && (
+                  <div className="mt-2 text-xs text-amber-500">
+                    * Requires player to be online
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-400">Failed to load details</p>
@@ -124,77 +141,41 @@ export default function StorePage() {
       try {
         setLoading(true);
         
-        // Try to fetch Tebex categories first
-        let categoryList = [{ id: 'all', name: 'All Items', icon: <FiPackage /> }];
-        try {
-          const tebexCategories = await getTebexCategories();
-          
-          if (tebexCategories && tebexCategories.length > 0) {
-            // Map Tebex categories to our format with icons
-            const mappedCategories = tebexCategories.map(cat => {
-              let icon;
-              const lowerName = cat.name.toLowerCase();
-              
-              if (lowerName.includes('rank')) icon = <FiStar />;
-              else if (lowerName.includes('crate')) icon = <FiPackage />;
-              else if (lowerName.includes('kit')) icon = <FiShield />;
-              else if (lowerName.includes('tool')) icon = <FiTool />;
-              else icon = <FiPackage />;
-              
-              return {
-                id: cat.id.toString(),
-                name: cat.name,
-                icon
-              };
-            });
-            
-            categoryList = [
-              { id: 'all', name: 'All Items', icon: <FiPackage /> },
-              ...mappedCategories
-            ];
-          }
-        } catch (catError) {
-          console.error('Failed to fetch Tebex categories:', catError);
-        }
-        
-        // Fetch products
+        // Fetch products directly with included categories
         const products = await getStoreProducts();
         
         if (products && products.length > 0) {
           setStoreItems(products);
           
-          // If we couldn't get Tebex categories, fall back to derived categories
-          if (categoryList.length <= 1) {
-            const apiCategories = await getStoreCategories(products);
-            
-            categoryList = [
-              { id: 'all', name: 'All Items', icon: <FiPackage /> },
-              ...apiCategories.map(cat => {
-                let icon;
-                switch(cat.id) {
-                  case 'ranks':
-                    icon = <FiStar />;
-                    break;
-                  case 'crates':
-                    icon = <FiPackage />;
-                    break;
-                  case 'kits':
-                    icon = <FiShield />;
-                    break;
-                  case 'tools':
-                    icon = <FiTool />;
-                    break;
-                  default:
-                    icon = <FiPackage />;
-                }
-                return {
-                  id: cat.id,
-                  name: cat.name,
+          // Extract unique categories from products
+          const uniqueCategories = new Map();
+          
+          products.forEach(product => {
+            if (product.category && product.category_id) {
+              if (!uniqueCategories.has(product.category_id)) {
+                // Determine icon based on category name
+                let icon = <FiPackage />;
+                const categoryName = product.category.toLowerCase();
+                
+                if (categoryName.includes('rank')) icon = <FiStar />;
+                else if (categoryName.includes('crate')) icon = <FiPackage />;
+                else if (categoryName.includes('kit')) icon = <FiShield />;
+                else if (categoryName.includes('tool')) icon = <FiTool />;
+                
+                uniqueCategories.set(product.category_id, {
+                  id: product.category_id.toString(),
+                  name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
                   icon
-                };
-              })
-            ];
-          }
+                });
+              }
+            }
+          });
+          
+          // Create category list with "All Items" first
+          const categoryList = [
+            { id: 'all', name: 'All Items', icon: <FiPackage /> },
+            ...Array.from(uniqueCategories.values())
+          ];
           
           setCategories(categoryList);
         } else {
@@ -206,6 +187,7 @@ export default function StorePage() {
               price: "9.99",
               description: "Get VIP status with special perks and privileges on the server.",
               category: "ranks",
+              category_id: "ranks",
               url: "#",
               bestseller: true
             },
@@ -215,6 +197,7 @@ export default function StorePage() {
               price: "19.99",
               description: "Upgrade to MVP for premium features and exclusive access.",
               category: "ranks",
+              category_id: "ranks",
               url: "#",
               bestseller: false
             },
@@ -224,6 +207,7 @@ export default function StorePage() {
               price: "14.99",
               description: "Unlock rare items and special rewards with this legendary crate.",
               category: "crates",
+              category_id: "crates",
               url: "#",
               bestseller: true
             },
@@ -233,6 +217,7 @@ export default function StorePage() {
               price: "7.99",
               description: "Try your luck with our mystery crate filled with random goodies.",
               category: "crates",
+              category_id: "crates",
               url: "#",
               bestseller: false
             }
@@ -263,14 +248,14 @@ export default function StorePage() {
     : storeItems.filter(item => {
         // If we're using numeric IDs from Tebex API
         if (!isNaN(activeCategory)) {
-          return item.category_id === parseInt(activeCategory);
+          return item.category_id?.toString() === activeCategory;
         }
         // Using string-based category names
         return item.category === activeCategory;
       });
 
   return (
-    <div className="w-full bg-gradient-to-b from-[#0c0c14] to-[#13141d] text-white min-h-screen pb-16">
+    <div className="w-full bg-[#13141d] text-white min-h-screen pb-16">
       <div className="container mx-auto md:w-4/5 px-4 py-12">
         <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">
