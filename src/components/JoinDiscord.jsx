@@ -1,4 +1,4 @@
-import { Button } from "../ui/button"
+import { Button } from "../ui/Button"
 import frame from "../assets/Frame 2.png";
 import pngtree from "../assets/pngtree.png"
 
