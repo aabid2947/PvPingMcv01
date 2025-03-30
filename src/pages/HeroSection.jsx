@@ -6,8 +6,8 @@ import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import blue from "../api/blue.png"
-import green from "../api/green.png"
+import blue from "../assets/blue.png"
+import green from "../assets/green.png"
 
 import MinecraftServerPromoWithImages from "../components/minecraft-server-promo-with-images";
 
