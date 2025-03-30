@@ -1,16 +1,37 @@
-
 import storeImg from "../assets/store.png"
-import React, { useState } from 'react';
-import { FiShoppingCart, FiPackage, FiStar, FiShield, FiTool, FiShoppingBag } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiShoppingCart, FiPackage, FiStar, FiShield, FiTool, FiShoppingBag, FiInfo } from 'react-icons/fi';
 import arrow from "../assets/arrow.png"
+import { getStoreProducts, getStoreCategories, getTebexCategories, getPackageDetails } from '../services/api';
 
-const StoreItem = ({ name, price, description, category, bestseller }) => {
+const StoreItem = ({ id, name, price, description, category, image, url, bestseller }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleViewDetails = async (e) => {
+    e.preventDefault();
+    setShowDetails(true);
+    
+    if (!details && !loading) {
+      setLoading(true);
+      try {
+        const packageDetails = await getPackageDetails(id);
+        setDetails(packageDetails);
+      } catch (error) {
+        console.error('Failed to fetch package details:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   return (
-    <div className="bg-[#0c0c14]  rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105">
+    <div className="bg-[#0c0c14] rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105">
       <div className="relative">
         <div className="h-48 bg-[#1F2937]">
           <img 
-            src={storeImg} 
+            src={image || storeImg} 
             alt={name} 
             className="w-full h-full object-cover"
           />
@@ -24,12 +45,66 @@ const StoreItem = ({ name, price, description, category, bestseller }) => {
       <div className="p-6">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-2xl font-bold text-white">{name}</h3>
-          <span className="text-xl font-bold text-purple-400">{price}</span>
+          <span className="text-xl font-bold text-purple-400">${price}</span>
         </div>
-        <p className="text-gray-400 text-lg mb-5">{description}</p>
-        <button className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center gap-2">
-          <FiShoppingCart /> Add to Cart
-        </button>
+        <p className="text-gray-400 text-lg mb-5 line-clamp-2">{description}</p>
+        
+        {/* Details section that shows when clicked */}
+        {showDetails && (
+          <div className="mb-4 p-3 bg-[#131827] rounded-lg">
+            {loading ? (
+              <div className="text-center py-3">
+                <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+                <p className="text-sm text-gray-300">Loading details...</p>
+              </div>
+            ) : details ? (
+              <div>
+                <h4 className="text-lg font-semibold mb-2 text-purple-300">What's included:</h4>
+                <div className="text-sm text-gray-300">
+                  {details.commands && details.commands.length > 0 ? (
+                    <ul className="list-disc pl-5 space-y-1">
+                      {details.commands.map((cmd, index) => (
+                        <li key={index}>
+                          {cmd.description || 'Server command'} {cmd.conditions && <span className="text-xs text-gray-400">({cmd.conditions})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No detailed information available</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">Failed to load details</p>
+            )}
+            <button 
+              onClick={() => setShowDetails(false)} 
+              className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+            >
+              Close details
+            </button>
+          </div>
+        )}
+        
+        <div className="flex flex-col space-y-2">
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <FiShoppingCart /> Purchase
+          </a>
+          
+          {!showDetails && (
+            <button
+              onClick={handleViewDetails}
+              className="w-full py-2 px-4 bg-transparent border border-purple-500 text-purple-400 text-sm font-medium rounded-lg hover:bg-purple-900/20 transition-colors flex items-center justify-center gap-2"
+            >
+              <FiInfo /> View Details
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -37,90 +112,167 @@ const StoreItem = ({ name, price, description, category, bestseller }) => {
 
 export default function StorePage() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [storeItems, setStoreItems] = useState([]);
+  const [categories, setCategories] = useState([
+    { id: 'all', name: 'All Items', icon: <FiPackage /> }
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const categories = [
-    { id: 'all', name: 'All Items', icon: <FiPackage /> },
-    { id: 'ranks', name: 'Ranks', icon: <FiStar /> },
-    { id: 'crates', name: 'Crates', icon: <FiPackage /> },
-    { id: 'kits', name: 'Kits', icon: <FiShield /> },
-    { id: 'tools', name: 'Tools & Weapons', icon: <FiTool /> }
-  ];
+  useEffect(() => {
+    const fetchStoreData = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to fetch Tebex categories first
+        let categoryList = [{ id: 'all', name: 'All Items', icon: <FiPackage /> }];
+        try {
+          const tebexCategories = await getTebexCategories();
+          
+          if (tebexCategories && tebexCategories.length > 0) {
+            // Map Tebex categories to our format with icons
+            const mappedCategories = tebexCategories.map(cat => {
+              let icon;
+              const lowerName = cat.name.toLowerCase();
+              
+              if (lowerName.includes('rank')) icon = <FiStar />;
+              else if (lowerName.includes('crate')) icon = <FiPackage />;
+              else if (lowerName.includes('kit')) icon = <FiShield />;
+              else if (lowerName.includes('tool')) icon = <FiTool />;
+              else icon = <FiPackage />;
+              
+              return {
+                id: cat.id.toString(),
+                name: cat.name,
+                icon
+              };
+            });
+            
+            categoryList = [
+              { id: 'all', name: 'All Items', icon: <FiPackage /> },
+              ...mappedCategories
+            ];
+          }
+        } catch (catError) {
+          console.error('Failed to fetch Tebex categories:', catError);
+        }
+        
+        // Fetch products
+        const products = await getStoreProducts();
+        
+        if (products && products.length > 0) {
+          setStoreItems(products);
+          
+          // If we couldn't get Tebex categories, fall back to derived categories
+          if (categoryList.length <= 1) {
+            const apiCategories = await getStoreCategories(products);
+            
+            categoryList = [
+              { id: 'all', name: 'All Items', icon: <FiPackage /> },
+              ...apiCategories.map(cat => {
+                let icon;
+                switch(cat.id) {
+                  case 'ranks':
+                    icon = <FiStar />;
+                    break;
+                  case 'crates':
+                    icon = <FiPackage />;
+                    break;
+                  case 'kits':
+                    icon = <FiShield />;
+                    break;
+                  case 'tools':
+                    icon = <FiTool />;
+                    break;
+                  default:
+                    icon = <FiPackage />;
+                }
+                return {
+                  id: cat.id,
+                  name: cat.name,
+                  icon
+                };
+              })
+            ];
+          }
+          
+          setCategories(categoryList);
+        } else {
+          // Fallback for development if no products
+          setStoreItems([
+            {
+              id: 1,
+              name: "VIP Rank",
+              price: "9.99",
+              description: "Get VIP status with special perks and privileges on the server.",
+              category: "ranks",
+              url: "#",
+              bestseller: true
+            },
+            {
+              id: 2,
+              name: "MVP Rank",
+              price: "19.99",
+              description: "Upgrade to MVP for premium features and exclusive access.",
+              category: "ranks",
+              url: "#",
+              bestseller: false
+            },
+            {
+              id: 3,
+              name: "Legendary Crate",
+              price: "14.99",
+              description: "Unlock rare items and special rewards with this legendary crate.",
+              category: "crates",
+              url: "#",
+              bestseller: true
+            },
+            {
+              id: 4,
+              name: "Mystery Crate",
+              price: "7.99",
+              description: "Try your luck with our mystery crate filled with random goodies.",
+              category: "crates",
+              url: "#",
+              bestseller: false
+            }
+          ]);
+          
+          // Set default categories
+          setCategories([
+            { id: 'all', name: 'All Items', icon: <FiPackage /> },
+            { id: 'ranks', name: 'Ranks', icon: <FiStar /> },
+            { id: 'crates', name: 'Crates', icon: <FiPackage /> },
+            { id: 'kits', name: 'Kits', icon: <FiShield /> }
+          ]);
+        }
+      } catch (err) {
+        console.error('Error fetching store data:', err);
+        setError('Failed to load store items. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStoreData();
+  }, []);
   
-  const storeItems = [
-    {
-      id: 1,
-      name: "VIP Rank",
-      price: "$9.99",
-      description: "Get VIP status with special perks and privileges on the server.",
-      category: "ranks",
-      bestseller: true
-    },
-    {
-      id: 2,
-      name: "MVP Rank",
-      price: "$19.99",
-      description: "Upgrade to MVP for premium features and exclusive access.",
-      category: "ranks",
-      bestseller: false
-    },
-    {
-      id: 3,
-      name: "Legendary Crate",
-      price: "$14.99",
-      description: "Unlock rare items and special rewards with this legendary crate.",
-      category: "crates",
-      bestseller: true
-    },
-    {
-      id: 4,
-      name: "Mystery Crate",
-      price: "$7.99",
-      description: "Try your luck with our mystery crate filled with random goodies.",
-      category: "crates",
-      bestseller: false
-    },
-    {
-      id: 5,
-      name: "Warrior Kit",
-      price: "$12.99",
-      description: "Start with full warrior gear and powerful weapons and armor.",
-      category: "kits",
-      bestseller: false
-    },
-    {
-      id: 6,
-      name: "Miner Kit",
-      price: "$9.99",
-      description: "Get all the mining tools and resources you need to build and craft.",
-      category: "kits",
-      bestseller: false
-    },
-    {
-      id: 7,
-      name: "Enchanted Sword",
-      price: "$8.99",
-      description: "A powerful enchanted sword with special abilities.",
-      category: "tools",
-      bestseller: false
-    },
-    {
-      id: 8,
-      name: "Dragon Bow",
-      price: "$11.99",
-      description: "A mighty bow with fire and knockback enchantments.",
-      category: "tools",
-      bestseller: true
-    }
-  ];
-  
+  // Filter items based on selected category
   const filteredItems = activeCategory === 'all' 
     ? storeItems 
-    : storeItems.filter(item => item.category === activeCategory);
+    : storeItems.filter(item => {
+        // If we're using numeric IDs from Tebex API
+        if (!isNaN(activeCategory)) {
+          return item.category_id === parseInt(activeCategory);
+        }
+        // Using string-based category names
+        return item.category === activeCategory;
+      });
 
   return (
-    <div className="w-full bg-[#13141d] text-white min-h-screen">
+    <div className="w-full bg-gradient-to-b from-[#0c0c14] to-[#13141d] text-white min-h-screen pb-16">
       <div className="container mx-auto md:w-4/5 px-4 py-12">
-        <div className="mb-16 flex items-center">
+        <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">
             <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
               <FiShoppingBag className="w-6 h-6" />
@@ -134,6 +286,10 @@ export default function StorePage() {
             <img src={arrow} alt="" />
           </div>
         </div>
+        
+        <p className="text-gray-300 text-xl mb-8">
+          Support our server and enhance your gameplay with exclusive items and perks
+        </p>
         
         <div className="flex flex-wrap justify-center gap-4 mb-12">
           {categories.map((category) => (
@@ -152,27 +308,50 @@ export default function StorePage() {
           ))}
         </div>
         
-        <p className="text-gray-300 text-xl mb-12">
-          Support our server and enhance your gameplay with exclusive items and perks
-        </p>
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-xl text-gray-300">Loading store items...</p>
+          </div>
+        )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredItems.map((item) => (
-            <StoreItem key={item.id} {...item} />
-          ))}
-        </div>
+        {error && !loading && (
+          <div className="text-center py-8 mb-8">
+            <p className="text-xl text-red-400">{error}</p>
+          </div>
+        )}
         
-        <div className="mt-16 bg-[#111827] rounded-xl p-8">
+        {!loading && filteredItems.length === 0 && (
+          <div className="text-center py-12 bg-[#111827]/60 backdrop-blur-sm rounded-xl shadow-lg">
+            <p className="text-xl text-gray-400">No items found in this category</p>
+            <p className="text-gray-400 mt-2">Try selecting a different category or check back later for new items.</p>
+          </div>
+        )}
+        
+        {!loading && filteredItems.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredItems.map((item) => (
+              <StoreItem key={item.id} {...item} />
+            ))}
+          </div>
+        )}
+        
+        <div className="mt-16 bg-[#111827]/80 backdrop-blur-sm rounded-xl p-8 shadow-lg shadow-blue-900/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-3">Need a custom package?</h2>
-              <p className="text-gray-300 text-xl">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 text-transparent bg-clip-text mb-3">Need a custom package?</h2>
+              <p className="text-gray-300 text-lg">
                 If you don't see what you're looking for, contact our support team to discuss custom packages for your needs.
               </p>
             </div>
-            <button className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors whitespace-nowrap">
+            <a 
+              href="http://pvpingmc.net/discord" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors whitespace-nowrap shadow-lg hover:shadow-purple-600/20"
+            >
               Contact Support
-            </button>
+            </a>
           </div>
         </div>
       </div>

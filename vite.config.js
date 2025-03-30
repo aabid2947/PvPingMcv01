@@ -5,6 +5,29 @@ import matter from 'gray-matter'
 import { resolve } from 'path'
 import fs from 'fs'
 
+// Custom plugin to handle markdown files
+const markdownPlugin = () => ({
+  name: 'markdown-plugin',
+  transform(code, id) {
+    if (id.endsWith('.md')) {
+      try {
+        const { data, content } = matter(code);
+        return {
+          code: `
+            const frontMatter = ${JSON.stringify(data)};
+            const content = ${JSON.stringify(content)};
+            export { frontMatter, content };
+            export default { frontMatter, content };
+          `,
+          map: null
+        };
+      } catch (error) {
+        console.error('Error processing markdown:', id, error);
+        return null;
+      }
+    }
+  }
+});
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,69 +35,28 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // Custom plugin to handle markdown files
-    {
-      name: 'markdown-loader',
-      transform(code, id) {
-        if (id.endsWith('.md')) {
-          const { data: frontMatter, content } = matter(code);
-          
-          // Return the processed content as a JavaScript module
-          return {
-            code: `
-              export default {
-                frontMatter: ${JSON.stringify(frontMatter)},
-                content: ${JSON.stringify(content)}
-              }
-            `,
-            map: null
-          };
-        }
-      },
-      // Add this to handle content files in SSR/production build
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (req.url?.startsWith('/content/') && req.url?.endsWith('.md')) {
-            const filePath = resolve(process.cwd(), req.url.slice(1));
-            try {
-              const content = fs.readFileSync(filePath, 'utf-8');
-              res.setHeader('Content-Type', 'text/plain');
-              res.end(content);
-            } catch (error) {
-              next(error);
-            }
-          } else {
-            next();
-          }
-        });
-      }
-    }
+    markdownPlugin()
   ],
-  server: {
-    host: "0.0.0.0",
-    port: 5173,
-    strictPort: true,
-    cors: true,
-    allowedHosts: [
-      "c196-103-134-102-70.ngrok-free.app",// Allow ngrok domain
-      "localhost" // Keep localhost allowed
-    ],
-  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
     },
   },
-  // Configure the public folder to include the admin directory for Netlify CMS
+  // Configure the public folder
   publicDir: 'public',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        admin: resolve(__dirname, 'public/admin/index.html')
+        main: resolve(__dirname, 'index.html')
       }
     }
   },
+  assetsInclude: ['**/*.md'],
+  optimizeDeps: {
+    force: true, // Force dependency optimization
+    exclude: ['fsevents'],
+    include: ['react', 'react-dom', 'react-router-dom', 'react-dom/client']
+  }
 })

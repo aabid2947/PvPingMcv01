@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react"
 import pvping from "../assets/thumb_logo.png"
 import { Link } from "react-router-dom"
-import { Play, ChevronRight, Home as HomeIcon, ExternalLink } from "lucide-react"
-import Trailer from "../assets/trailer.png";
 import frame from "../assets/Frame 2.png";
 import pngtree from "../assets/pngtree.png"
 import storeImg from "../assets/store.png";
 import arrow from "../assets/arrow.png"
 import { useNavigate } from "react-router-dom";
 import { getAllPosts } from "../utils/markdown";
+import JoinDiscord from "../components/JoinDiscord";
 
 // News card component with hover animation and link to blog detail
 const NewsCard = ({ post }) => {
@@ -76,8 +75,14 @@ export default function OriginMC() {
       try {
         setLoading(true);
         const allPosts = await getAllPosts();
+        
+        // Sort posts by date (newest first)
+        const sortedPosts = allPosts.sort((a, b) => {
+          return new Date(b.date) - new Date(a.date);
+        });
+        
         // Get the 3 most recent posts
-        setFeaturedPosts(allPosts.slice(0, 3));
+        setFeaturedPosts(sortedPosts.slice(0, 3));
         setLoading(false);
       } catch (err) {
         console.error('Error fetching blog posts:', err);
@@ -147,53 +152,54 @@ export default function OriginMC() {
           </div>
         )}
       </div>
-
+      <JoinDiscord />
       {/* Discord Community Section - Updated to match the image */}
       <div className="container mx-auto md:w-4/5 px-4 py-8 md:py-16">
-        <div className="bg-[#13141d] border border-gray-800 rounded-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-lg">
-          {/* Left Side - Creeper Character */}
-          <div className="relative z-10 py-6 px-8">
-            <img
-              src={pngtree}
-              alt="Minecraft Character"
-              className="h-32 md:h-40 w-auto"
-            />
-          </div>
+  <div className="bg-[#13141d] border border-gray-800 rounded-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-lg">
+    {/* Left Side - Minecraft Character */}
+    <div className="relative z-10 p-6 md:p-8">
+      <img
+        src={pngtree}
+        alt="Minecraft Character"
+        className="h-32 md:h-40 w-auto"
+      />
+    </div>
 
-          {/* Center Text Content */}
-          <div className="text-center md:text-left relative z-10 py-6 px-4 flex-1">
-            <h2 className="text-xl md:text-2xl font-bold mb-2">
-              Join our discord community!
-            </h2>
-            <p className="text-gray-400 text-sm md:text-base">
-              Find new friends to explore dungeons, build a <span className="text-blue-400">town</span> and become <span className="text-red-400">rich</span> together. 
-              <br className="hidden md:block" />
-              We have over <span className="font-semibold">24/7 Support</span>.
-            </p>
-          </div>
+    {/* Center Content */}
+    <div className="text-center md:text-left relative z-10 p-4 md:p-6 flex-1">
+      <h2 className="text-xl md:text-2xl font-bold mb-2">
+        Join our discord community!
+      </h2>
+      <p className="text-gray-400 text-sm md:text-base">
+        Find new friends to explore dungeons, build a <span className="text-blue-400">town</span> and discover <span className="text-red-400">rich</span> together.
+        <br className="hidden md:block" />
+        We also offer <span className="font-semibold">NVT</span> support.
+      </p>
+    </div>
 
-          {/* Discord Button */}
-          <div className="relative z-10 py-6 px-8">
-            <a
-              href="http://pvpingmc.net/discord"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-[#5865F2] hover:bg-[#4752c4] transition-all duration-300 text-white font-medium py-2 px-6 rounded-md inline-block shadow-md hover:shadow-lg"
-            >
-              Join discord!
-            </a>
-          </div>
+    {/* Discord Button */}
+    <div className="relative z-10 p-6 md:p-8">
+      <a
+        href="http://pvpingmc.net/discord"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="bg-[#5865F2] hover:bg-[#4752c4] transition-all duration-300 text-white font-medium py-2 px-6 rounded-md inline-block shadow-md hover:shadow-lg"
+      >
+        Join discord!
+      </a>
+    </div>
 
-          {/* Right Side Image */}
-          <div className="absolute right-0 top-0 h-full">
-            <img
-              src={frame}
-              alt="Server Image"
-              className="h-full w-auto object-cover opacity-50"
-            />
-          </div>
-        </div>
-      </div>
+    {/* Right Side Decorative Image */}
+    <div className="absolute right-0 top-0 h-full w-1/3">
+      <img
+        src={frame}
+        alt="Server Background"
+        className="h-full w-full object-cover opacity-50"
+      />
+    </div>
+  </div>
+</div>
+
     </div>
   )
 }

@@ -20,6 +20,18 @@ const BlogCard = ({ post }) => {
         return 'bg-red-600';
       case 'features':
         return 'bg-yellow-600';
+      case 'announcement':
+        return 'bg-orange-600';
+      case 'changelog':
+        return 'bg-indigo-600';
+      case 'event':
+        return 'bg-pink-600';
+      case 'seasonal':
+        return 'bg-teal-600';
+      case 'guide':
+        return 'bg-cyan-600';
+      case 'tutorial':
+        return 'bg-emerald-600';
       default:
         return 'bg-gray-600';
     }
@@ -33,27 +45,34 @@ const BlogCard = ({ post }) => {
 
   return (
     <Link to={`/blog/${post.id}`} className="block">
-      <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl hover:shadow-blue-900/20">
-        <img 
-          src={post.thumbnail ? post.thumbnail : storeImg} 
-          alt={post.title} 
-          className="w-full h-40 object-cover"
-        />
-        <div className="p-5">
-          <h3 className="font-bold text-2xl mb-2">{post.title}</h3>
-          <p className="text-gray-400 text-lg mb-3">Posted on {formatDate(post.date)}</p>
-          
-          <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags && post.tags.map((tag, index) => (
-              <span key={index} className={`${getTagColor(tag)} text-base px-3 py-1 rounded shadow-sm`}>
+      <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20">
+        <div className="h-48 relative">
+          <img 
+            src={post.thumbnail ? post.thumbnail : storeImg} 
+            alt={post.title} 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+          <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+            {post.tags && post.tags.slice(0, 3).map((tag, index) => (
+              <span key={index} className={`${getTagColor(tag)} text-xs font-medium px-2 py-1 rounded shadow-sm`}>
                 {tag}
               </span>
             ))}
+            {post.tags && post.tags.length > 3 && (
+              <span className="bg-gray-700 text-xs font-medium px-2 py-1 rounded shadow-sm">
+                +{post.tags.length - 3}
+              </span>
+            )}
           </div>
-          
-          <p className="text-gray-400 text-lg">
+        </div>
+        <div className="p-5">
+          <p className="text-gray-400 text-sm mb-2">Posted on {formatDate(post.date)}</p>
+          <h3 className="font-bold text-2xl mb-3 bg-gradient-to-r from-white to-gray-300 text-transparent bg-clip-text">{post.title}</h3>
+          <p className="text-gray-400 text-base line-clamp-3">
             {post.excerpt}
           </p>
+          <div className="mt-4 text-blue-400 text-sm font-medium">Read More →</div>
         </div>
       </div>
     </Link>
@@ -70,7 +89,13 @@ const BlogOverview = () => {
       try {
         setLoading(true);
         const allPosts = await getAllPosts();
-        setPosts(allPosts);
+        
+        // Sort posts by date (newest first)
+        const sortedPosts = allPosts.sort((a, b) => {
+          return new Date(b.date) - new Date(a.date);
+        });
+        
+        setPosts(sortedPosts);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching blog posts:', err);
@@ -83,9 +108,9 @@ const BlogOverview = () => {
   }, []);
 
   return (
-    <div className="w-full bg-[#13141d] text-white min-h-screen">
+    <div className="w-full bg-gradient-to-b from-[#0c0c14] to-[#13141d] text-white min-h-screen pb-16">
       <div className="container mx-auto md:w-4/5 px-4 py-12">
-        <div className="mb-16 flex items-center">
+        <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">
             <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
               <FiBook className="w-6 h-6" />
@@ -100,12 +125,13 @@ const BlogOverview = () => {
           </div>
         </div>
         
-        <p className="text-gray-300 text-2xl mb-12">
+        <p className="text-gray-300 text-xl mb-8">
           Stay up to date with the latest server updates, events, and community news
         </p>
         
         {loading && (
-          <div className="text-center py-8">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
             <p className="text-xl text-gray-400">Loading blog posts...</p>
           </div>
         )}
@@ -118,7 +144,7 @@ const BlogOverview = () => {
         )}
         
         {!loading && !error && posts.length === 0 && (
-          <div className="text-center py-8">
+          <div className="text-center py-12 bg-[#111827]/60 backdrop-blur-sm rounded-xl shadow-lg">
             <p className="text-xl text-gray-400">No blog posts found</p>
             <p className="text-gray-400 mt-2">Check back later for new content!</p>
           </div>

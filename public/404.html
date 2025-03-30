@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // Single Page App routing hack for Cloudflare Pages
+    // Extracts the current path and redirects to the root with it as a query parameter
+    // This helps maintain client-side routing when refreshing the page
+    const segment = window.location.pathname;
+    window.location.href = `/${window.location.search}${window.location.hash}`;
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html> 

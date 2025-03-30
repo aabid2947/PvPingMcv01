@@ -5,11 +5,13 @@ import { Play, ChevronRight, Menu, X, Copy, ExternalLink } from "lucide-react"
 import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
+import axios from "axios";
 
 export default function OriginMC() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [playerCount, setPlayerCount] = useState(153); // Placeholder for actual API call
-  const [discordCount, setDiscordCount] = useState(847); // Placeholder for actual API call
+  const [playerCount, setPlayerCount] = useState(0);
+  const [isPlayerCountLoading, setIsPlayerCountLoading] = useState(true);
+  const [discordCount, setDiscordCount] = useState(847); // Placeholder for actual Discord API call
   const [copiedServer, setCopiedServer] = useState(false);
   const menuRef = useRef(null);
   const hamburgerRef = useRef(null);
@@ -17,6 +19,37 @@ export default function OriginMC() {
 
   // Check if we're on the home page
   const isHomePage = location.pathname === '/';
+
+  // Fetch player count from API
+  useEffect(() => {
+    const fetchPlayerCount = async () => {
+      try {
+        setIsPlayerCountLoading(true);
+        const response = await axios.get('https://api.mcsrvstat.us/2/play.pvpingmc.net');
+        
+        // Check if the server is online and has player data
+        if (response.data && response.data.online) {
+          if (response.data.players && typeof response.data.players.online === 'number') {
+            setPlayerCount(response.data.players.online);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching player count:', error);
+        // Fallback to default count on error
+        setPlayerCount(0);
+      } finally {
+        setIsPlayerCountLoading(false);
+      }
+    };
+
+    fetchPlayerCount();
+    
+    // Set up a refresh interval (every 5 minutes)
+    const intervalId = setInterval(fetchPlayerCount, 5 * 60 * 1000);
+    
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -56,7 +89,7 @@ export default function OriginMC() {
   };
 
   const copyServerAddress = () => {
-    navigator.clipboard.writeText("http://play.pvpingmc.net");
+    navigator.clipboard.writeText("play.pvpingmc.net");
     setCopiedServer(true);
     setTimeout(() => setCopiedServer(false), 2000);
   };
@@ -213,7 +246,13 @@ export default function OriginMC() {
                   <p className="text-sm text-green-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     {copiedServer ? "Copied!" : "Click to copy"}
                   </p>
-                  <p className="text-blue-400 text-sm mt-2">{playerCount} players online</p>
+                  <p className="text-blue-400 text-sm mt-2">
+                    {isPlayerCountLoading ? (
+                      <span className="inline-block animate-pulse">Loading players...</span>
+                    ) : (
+                      <span>{playerCount} players online</span>
+                    )}
+                  </p>
                 </div>
               </div>
 

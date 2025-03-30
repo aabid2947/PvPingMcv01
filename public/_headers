@@ -3,7 +3,5 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer-when-downgrade
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://identity.netlify.com https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com; media-src 'self'; frame-src 'self' https://identity.netlify.com; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self';
-
-/admin/*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://identity.netlify.com https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com; media-src 'self'; frame-src 'self' https://identity.netlify.com; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; 
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com https://plugin.tebex.io; font-src 'self'; connect-src 'self' https://plugin.tebex.io; media-src 'self'; frame-src 'self'; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self';
+  Cache-Control: public, max-age=0, must-revalidate 

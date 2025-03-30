@@ -44,17 +44,72 @@ function App() {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
-      <HeroSection />
-      <main className=' mt-[-30px]'>
+      <main className='mt-6'>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/blog" element={<BlogOverview />} />
-          <Route path="/blog/:id" element={<BlogDetail />} />
-          <Route path="/store" element={<Store />} />
-          <Route path="/vote" element={<Vote />} />
-          <Route path="/rules" element={<Rules />} />
-          <Route path="/pvpingmc" element={<PvPingMC />} />
-          <Route path="/originpass" element={<OriginPass />} />
+          <Route path="/" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <Home />
+              </div>
+            </>
+          } />
+          <Route path="/blog" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <BlogOverview />
+              </div>
+            </>
+          } />
+          <Route path="/blog/:id" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <BlogDetail />
+              </div>
+            </>
+          } />
+          <Route path="/store" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <Store />
+              </div>
+            </>
+          } />
+          <Route path="/vote" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <Vote />
+              </div>
+            </>
+          } />
+          <Route path="/rules" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <Rules />
+              </div>
+            </>
+          } />
+          <Route path="/pvpingmc" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <PvPingMC />
+              </div>
+            </>
+          } />
+          <Route path="/originpass" element={
+            <>
+              <HeroSection />
+              <div className="mt-[-30px]">
+                <OriginPass />
+              </div>
+            </>
+          } />
         </Routes>
       </main>
       <Footer />
