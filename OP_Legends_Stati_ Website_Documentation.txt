@@ -1,0 +1,117 @@
+Project Documentation: Static Website Deployment Using React
+
+1. Project Overview
+The project is about building a clean, responsive static website for PvPing with six main pages. The site will be hosted on Cloudflare Pages and have:
+
+- Home Page: A specially designed landing page showcasing the three newest blog posts.
+- Blog Overview Page: A page with a list of all published blog posts.
+- Blog Detail Page: Dynamic pages which render single blog posts authored in Markdown.
+- Store Page: A page which includes integration with Tebex's Headless API to retrieve product packages and process payment.
+- Vote Page: A basic page redirecting visitors to an external voting platform.
+- Rules Page: A page which replicates the rules content from https://oplegends.com/rules.
+
+2. Tech Stack
+The project takes advantage of React and surrounding technologies to have a quick, interactive, and easy-to-maintain website:
+
+Frontend Framework:
+- React: For creating a dynamic and component-based UI.
+
+Routing & Static Generation:
+- React Router: To handle routing between pages.
+- Static Site Generation: The project will be constructed as a static site, with pages pre-rendered for quick load times on Cloudflare Pages.
+
+Styling:
+- Tailwind CSS: For responsive and fast UI building.
+
+Markdown Rendering:
+- react-markdown: To render Markdown blog posts as React components after parsing them.
+
+Store Integration:
+- Tebex Headless API: Accessed through fetch/axios to get product packages and handle payments. The integration will be in line with the Tebex documentation guidelines.
+
+Version Control & Collaboration:
+- Git & GitHub: For collaboration and source code management.
+
+Deployment:
+- Cloudflare Pages: To host the static website, providing secure HTTPS and fast global content delivery.
+
+3. Implementation Process
+
+### 3.1. Planning & Design
+Requirements Gathering:
+- Visit through all the reference sites provided (home, blog, blog detail, store, vote, and rules) to grasp the functionality needed.
+- Complete the site design, making sure the home page has a clear appearance but prominently displays the three most recent blog posts.
+
+Design :
+- Obtain client's figma design and inmplement it.
+
+### 3.2. Project Setup
+Initialize Project:
+- Initialize a new React project (using Create React App or a similar boilerplate).
+- Add Tailwind CSS for styling.
+- Set up a Git repository on GitHub for version control.
+
+Folder Structure:
+- Structure the project in components, pages, and assets.
+- Establish routing via React Router or file-based routing from Next.js if chosen.
+
+### 3.3. Page Building
+Home Page:
+- Build a distinct layout that is not the same as the reference site.
+- Add a module/component to retrieve and show the three most recent blog posts. Blog content can be handled as static JSON files or imported from Markdown files at build time.
+
+Blog Pages:
+- Blog Overview Page: Establish a page listing all blog entries. Use pagination or infinite scrolling if necessary.
+- Blog Detail Page: Establish dynamic routing such that each blog entry (in Markdown format) is routed to a detail page. Employ react-markdown to render Markdown content as React components.
+
+Store Page:
+- Establish integration with the Tebex Headless API to retrieve product packages.
+- Utilize the Tebex Headless Template as a reference to handle payments and show store products.
+- Handle API keys and payment information securely.
+
+Vote Page:
+- Build a basic page with an easy-to-understand call-to-action button or link that redirects visitors to the external voting site.
+
+Rules Page:
+- Build a static page that replicates the rules given by the client directly.
+- Maintain uniform styling with the rest of the website.
+
+### 3.4. Testing & Quality Assurance
+Unit & Integration Testing:
+- Test React components with a framework like Jest and React Testing Library.
+- Ensure API integrations, particularly with the Tebex API, are properly functioning.
+
+Responsive & Cross-Browser Testing:
+- Test the site on different devices and browsers for responsiveness and compatibility.
+
+Performance Optimization:
+- Optimize images, code splitting, and asset delivery for quick load times on Cloudflare Pages.
+
+### 3.5. Deployment
+Staging Environment:
+- Integrate the GitHub repository with Cloudflare Pages and deploy to a staging environment.
+- Provide the staging URL to the client for review and feedback.
+
+Final Production Deployment:
+- Deploy the final build to production once approved.
+- Keep an eye on performance and configure alerts for any post-deployment problems.
+
+4. Deliverables
+- Static Website: A complete static website with six pages: Home, Blog Overview, Blog Detail, Store, Vote, and Rules.
+- Blog System: A blogging system based on Markdown for simple content management.
+- Store Integration: Direct integration with Tebex's Headless API for real-time product rendering and payment handling.
+- Source Code: Source code for the entire project hosted on GitHub.
+- Deployment: Website hosted and deployed on Cloudflare Pages with continuous integration set up.
+- Documentation: Thorough documentation of design choices, implementation specifics, API usage, and maintenance practices.
+
+5. Post-Launch Support & Maintenance
+- Support Period: Offer support for post-launch bug fixes, content modifications, and small tweaks.
+- Documentation Handover: Provide extensive documentation to aid in future maintenance and updates.
+- Client Training: Provide training on how to update blog posts via Markdown and edit other site content as an option.
+
+6. Conclusion
+The above project document specifies a concrete plan for creating the  static website utilizing React for the frontend.
+ The use of a Markdown-based blog system, native store integration through the Tebex Headless API, and hosting on Cloudflare 
+ Pages guarantees a up-to-date, scalable, and manageable solution. The timeline and milestones ensure transparency to the client, with each step being well-planned and implemented. We guarantee a high-quality, user-friendly website that fully satisfies all project requirements.
+
+If you have any query feel free to ask.

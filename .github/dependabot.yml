@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/" # Adjust if package.json is in a subfolder
+    schedule:
+      interval: "daily"

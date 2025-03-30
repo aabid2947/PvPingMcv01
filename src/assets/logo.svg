@@ -1,0 +1,6 @@
+<svg width="240" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M120 15C140 15 160 25 160 40C160 55 140 65 120 65C100 65 80 55 80 40C80 25 100 15 120 15Z" fill="#D4AF37"/>
+  <text x="120" y="45" font-family="Arial" font-size="24" font-weight="bold" fill="#8B0000" text-anchor="middle">OPLEGENDS</text>
+  <path d="M80 40C80 25 100 15 120 15" stroke="#8B0000" stroke-width="2"/>
+  <path d="M160 40C160 55 140 65 120 65" stroke="#8B0000" stroke-width="2"/>
+</svg>

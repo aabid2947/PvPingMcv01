@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/blog",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/blog/:id",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/store",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/vote",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/rules",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/pvpingmc",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/originpass",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/admin/index.html"
+    },
+    {
+      "src": "/admin/*",
+      "dest": "/admin/index.html"
+    },
+    {
+      "src": "/images/uploads/*",
+      "dest": "/images/uploads/:splat"
+    },
+    {
+      "src": "/*",
+      "dest": "/index.html"
+    }
+  ]
+} 
