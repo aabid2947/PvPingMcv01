@@ -6,6 +6,9 @@ import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import blue from "../api/blue.png"
+import green from "../api/green.png"
+
 import MinecraftServerPromoWithImages from "../components/minecraft-server-promo-with-images";
 
 export default function OriginMC() {
@@ -312,7 +315,7 @@ export default function OriginMC() {
             <div className="relative flex items-center justify-center wrap rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl ">
               {/* Blue Crystal Decoration - Top Right */}
               <div className="absolute top-[-30px] right-[-30px] ">
-              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/blue-r7dyADHeueOoour5YxOzJITpZChCvc.png" alt=""
+              <img src={blue} alt=""
                 height={120}
                 width={120}
                 className="brightness-130"
@@ -322,7 +325,7 @@ export default function OriginMC() {
               {/* Green Crystal Decoration - Bottom Left */}
               <div className="absolute bottom-[-30px] left-[-30px] ">
                 
-                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/green-MSgrrQ6iHVa56IrtijwvZVr0HNElGO.png" alt=""
+                <img src={green} alt=""
                 height={100}
                 width={100}
                 className="brightness-130"
