@@ -309,7 +309,7 @@ export default function OriginMC() {
             </div>
 
             {/* Ready to Play Section - Adjusted to match Figma with less padding */}
-            <div className="relative rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl ">
+            <div className="relative flex items-center justify-center wrap rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl ">
               {/* Blue Crystal Decoration - Top Right */}
               <div className="absolute top-[-30px] right-[-30px] ">
               <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/blue-r7dyADHeueOoour5YxOzJITpZChCvc.png" alt=""
@@ -339,12 +339,23 @@ export default function OriginMC() {
                   how to join the server on Java Edition and start playing in 
                   less than 30 seconds.
                 </p>
-                <Link
-                  to="#"
+                {/* <Button
                   className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-1.5 px-10 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 uppercase tracking-wide shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
+                  style={{button:}}
                 >
                   PLAY NOW
-                </Link>
+                  
+                </Button> */}
+
+                <button
+  className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-1.5 px-10 rounded-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 uppercase tracking-wide shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
+  style={{
+    clipPath: "polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%)"
+  }}
+>
+  PLAY NOW
+</button>
+
               </div>
             </div>
             {/* <MinecraftServerPromoWithImages/> */}
