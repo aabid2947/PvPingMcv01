@@ -48,9 +48,13 @@ const BlogCard = ({ post }) => {
       <div className="bg-[#13141d] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20">
         <div className="h-48 relative">
           <img 
-            src={post.thumbnail ? post.thumbnail : storeImg} 
+            src={post.thumbnail || storeImg} 
             alt={post.title} 
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = storeImg;
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
           <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
@@ -109,7 +113,7 @@ const BlogOverview = () => {
 
   return (
     <div className="w-full bg-[#13141d] text-white min-h-screen pb-16">
-      <div className="container mx-auto md:w-4/5 px-4 py-12">
+      <div className="w-full container mx-auto md:w-4/5 px-4 py-12">
         <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">
             <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
@@ -151,7 +155,7 @@ const BlogOverview = () => {
         )}
         
         {!loading && !error && posts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {posts.map(post => (
               <BlogCard key={post.id} post={post} />
             ))}

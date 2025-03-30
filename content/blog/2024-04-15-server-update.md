@@ -1,20 +1,22 @@
 ---
 title: "Major Server Update 1.2 - New Dimensions & Custom Enchantments"
 date: "2024-04-15"
-thumbnail: "https://raw.githubusercontent.com/akabab/pvping-site/main/public/images/server-update.jpg"
+thumbnail: "https://i.imgur.com/BcEDQJF.jpg"
 tags: ["update", "features", "changelog"]
 excerpt: "Discover all the new content in our latest server update, including two new custom dimensions, unique enchantments, and quality-of-life improvements."
 ---
 
 # Server Update 1.2: Dimensions Expanded
 
-![Server Update](https://raw.githubusercontent.com/akabab/pvping-site/main/public/images/server-update.jpg)
+![Server Update Banner](https://i.imgur.com/BcEDQJF.jpg)
 
 We're thrilled to announce that Server Update 1.2 has officially launched! This update brings some of our most requested features along with exciting new content we've been working on behind the scenes.
 
 ## New Dimensions
 
 ### The Crystal Caverns
+![Crystal Caverns](https://i.imgur.com/KVnjwAq.jpg)
+
 Venture into a mesmerizing underground realm filled with giant crystal formations, bioluminescent flora, and unique resources.
 
 - **Crystal Mining**: Mine rare crystal types with varying properties
@@ -23,6 +25,8 @@ Venture into a mesmerizing underground realm filled with giant crystal formation
 - **Crystal Forge**: Use the special crafting station to create crystal-infused gear
 
 ### The Void Islands
+![Void Islands](https://i.imgur.com/vf1q9Wr.jpg)
+
 A series of floating islands suspended in an endless void, featuring:
 
 - **Island Hopping**: Use ender pearls, special void bridges, or custom gliders to navigate between islands
@@ -32,6 +36,8 @@ A series of floating islands suspended in an endless void, featuring:
 - **Void Boss**: Challenge the Void Warden, a powerful new boss with unique mechanics
 
 ## New Custom Enchantments
+
+![Custom Enchantments](https://i.imgur.com/pzgLYbd.jpg)
 
 We've added 12 new enchantments to the game, here are some highlights:
 
@@ -46,6 +52,8 @@ We've added 12 new enchantments to the game, here are some highlights:
 
 ## Quality of Life Improvements
 
+![Quality of Life](https://i.imgur.com/X2qyFdt.jpg)
+
 - **Enhanced Inventory Management**: Sort, filter, and search through your inventory
 - **Waypoint System**: Set custom teleport locations around the map
 - **Custom Recipe Book**: In-game guide for all custom crafting recipes
@@ -58,6 +66,8 @@ We've added 12 new enchantments to the game, here are some highlights:
 ## Balance Changes
 
 ### Economy
+![Economy Changes](https://i.imgur.com/eYvS8Xm.jpg)
+
 - Adjusted prices of certain resources to better balance the economy
 - Introduced new rare trade items from the new dimensions
 - Added progressive taxation system for high-value transactions
@@ -93,6 +103,8 @@ This update lays the groundwork for even more exciting features coming in the ne
 - And much more!
 
 ## How to Access the New Content
+
+![How to Access](https://i.imgur.com/c6ym2E0.jpg)
 
 Simply log in to the server - the update has been automatically applied! To access the new dimensions:
 

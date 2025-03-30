@@ -6,6 +6,7 @@ import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import MinecraftServerPromoWithImages from "../components/minecraft-server-promo-with-images";
 
 export default function OriginMC() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -106,10 +107,10 @@ export default function OriginMC() {
   const mobileInactiveClass = "hover:text-blue-400 transition-all duration-300 py-2 text-left font-medium w-full block";
 
   return (
-    <div className={`${isHomePage ? 'min-h-screen' : 'min-h-[80px] md:min-h-[120px]'} bg-[#13141d] text-white mt-6`}
+    <div className={`${isHomePage ? 'min-h-screen' : 'min-h-[80px] md:min-h-[120px]'} bg-[#13141d] text-white mt-6 w-full`}
          style={{ backgroundImage: `url(${heroSectionBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {/* Navigation */}
-      <nav className={`container mx-auto md:w-4/5 px-4 py-4 md:py-8 flex items-center justify-between relative`}>
+      <nav className={`w-full container mx-auto md:w-4/5 px-4  px-4 flex items-center justify-between relative`}>
         {/* Mobile Hamburger - positioned to the left */}
         <div className="md:hidden z-50" ref={hamburgerRef}>
           <button
@@ -126,13 +127,13 @@ export default function OriginMC() {
         </div>
 
         {/* Mobile Logo */}
-        <div className="md:hidden mx-auto">
+        {/* <div className="md:hidden mx-auto">
           <img 
             src={pvping} 
             alt="Origin MC Logo" 
             className="h-10 w-auto"
           />
-        </div>
+        </div> */}
 
         {/* Placeholder for right alignment */}
         <div className="md:hidden w-6"></div>
@@ -172,7 +173,7 @@ export default function OriginMC() {
         {/* Sidebar */}
         <div
           ref={menuRef}
-          className={`fixed top-0 left-0 w-2/5 md:hidden bg-[#1a1b26] border-r border-blue-800/30 shadow-lg z-50 h-full overflow-auto pt-20 pb-6 transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 w-3/4 max-w-xs md:hidden bg-[#1a1b26] border-r border-blue-800/30 shadow-lg z-50 h-full overflow-auto pt-20 pb-6 transition-transform duration-300 ease-in-out ${
             isMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -234,10 +235,10 @@ export default function OriginMC() {
       {/* Hero Section - Only shown on home page */}
       
         <>
-          <div className="relative py-8 md:py-16">
-            <div className="container mx-auto w-full md:w-4/5 px-4 flex flex-col md:flex-row items-center justify-between">
+          <div className="relative  w-full">
+            <div className="w-full container mx-auto md:w-4/5 px-4 flex flex-col md:flex-row items-center justify-between">
               {/* Left Side - Made Clickable */}
-              <div className="mb-8 md:mb-0 text-center md:text-left cursor-pointer group" onClick={copyServerAddress}>
+              <div className="hidden lg:block mb-8 md:mb-0 text-center md:text-left cursor-pointer group" onClick={copyServerAddress}>
                 <div className="flex flex-col items-center md:items-start">
                   <h2 className="text-xl md:text-2xl font-extrabold mb-2 group-hover:text-blue-400 transition-colors">Start your adventure today!</h2>
                   <div className="flex items-center">
@@ -258,21 +259,19 @@ export default function OriginMC() {
               </div>
 
               {/* Center Logo */}
-              <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-64 md:w-80 hidden md:block">
+              <div className="z-10 w-64 h-64 md:w-80 md:h-80 block mx-auto my-4 md:my-0">
                 <div className="relative">
                   <div className="absolute inset-0 blur-xl bg-gradient-to-r from-[#00ff85] to-[#00a1ff] opacity-30 rounded-full"></div>
                   <img
                     src={pvping}
                     alt="Origin MC Logo"
-                    width={300}
-                    height={200}
-                    className="relative z-10"
+                    className="relative z-10 h-60 w-60 md:h-64 md:w-80 mx-auto"
                   />
                 </div>
               </div>
 
               {/* Right Side - Made Clickable */}
-              <div className="text-center md:text-right cursor-pointer group" onClick={openDiscord}>
+              <div className="hidden lg:block  text-center md:text-right cursor-pointer group" onClick={openDiscord}>
                 <div className="flex flex-col items-center md:items-end">
                   <h2 className="text-xl md:text-2xl font-extrabold mb-2 group-hover:text-blue-400 transition-colors">Join our discord server!</h2>
                   <div className="flex items-center">
@@ -291,7 +290,7 @@ export default function OriginMC() {
           {/* Video and Ready to Play Section - Only shown on home page */}
           {isHomePage && (
           <>
-          <div className="container mx-auto w-full md:w-4/5 px-4 py-8 md:py-16 grid md:grid-cols-2 gap-8">
+          <div className="w-full container mx-auto md:w-4/5 px-4 py-8 md:py-16 grid md:grid-cols-2 gap-8">
             {/* Video Section */}
             <div className="relative rounded-xl overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-purple-900/30"></div>
@@ -310,19 +309,26 @@ export default function OriginMC() {
             </div>
 
             {/* Ready to Play Section - Adjusted to match Figma with less padding */}
-            <div className="relative rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl overflow-hidden">
+            <div className="relative rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl ">
               {/* Blue Crystal Decoration - Top Right */}
-              <div className="absolute top-3 right-3 w-12 h-12">
-                <div className="w-full h-full bg-blue-500 opacity-70 rotate-45 transform skew-x-12 skew-y-12 shadow-lg shadow-blue-500/50">
-                  <div className="w-full h-full bg-blue-400 opacity-50 rotate-12"></div>
-                </div>
+              <div className="absolute top-[-30px] right-[-30px] ">
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/blue-r7dyADHeueOoour5YxOzJITpZChCvc.png" alt=""
+                height={120}
+                width={120}
+                className="brightness-130"
+                 />
               </div>
               
               {/* Green Crystal Decoration - Bottom Left */}
-              <div className="absolute bottom-3 left-3 w-10 h-10">
-                <div className="w-full h-full bg-green-500 opacity-70 rotate-12 transform skew-x-12 skew-y-12 shadow-lg shadow-green-500/50">
-                  <div className="w-full h-full bg-green-400 opacity-50 rotate-12"></div>
-                </div>
+              <div className="absolute bottom-[-30px] left-[-30px] ">
+                
+                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/green-MSgrrQ6iHVa56IrtijwvZVr0HNElGO.png" alt=""
+                height={100}
+                width={100}
+                className="brightness-130"
+                 />
+                  {/* <div className="w-full h-full bg-green-400 opacity-50 rotate-12"></div> */}
+             
               </div>
               
               {/* Content */}
@@ -341,6 +347,7 @@ export default function OriginMC() {
                 </Link>
               </div>
             </div>
+            {/* <MinecraftServerPromoWithImages/> */}
           </div>
           </>)}
         </>

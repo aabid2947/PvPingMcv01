@@ -4,6 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure all root elements take full width */
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure container elements respect viewport width */
+.container {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 80%;
+  }
+}
+
+@layer components {
+  .navbar-btn {
+    @apply bg-transparent hover:bg-blue-500/10 transition-colors rounded-md px-6 py-3 text-white;
+  }
+}
+
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 13, 17, 23;

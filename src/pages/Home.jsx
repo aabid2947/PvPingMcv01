@@ -36,26 +36,30 @@ const NewsCard = ({ post }) => {
   };
  
   return (
-    <Link to={`/blog/${post.id}`} className="block">
-      <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl hover:shadow-blue-900/20">
+    <Link to={`/blog/${post.id}`} className="block w-full">
+      <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl hover:shadow-blue-900/20 h-full">
         <img
           src={post.thumbnail ? post.thumbnail : storeImg}
           alt={post.title}
           width={400}
           height={150}
           className="w-full h-40 object-cover"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = storeImg;
+          }}
         />
-        <div className="p-5">
-          <h3 className="font-bold text-2xl mb-2">{post.title}</h3>
-          <p className="text-gray-400 text-lg mb-3">Posted on {formatDate(post.date)}</p>
-          <div className="flex flex-wrap gap-2 mb-4">
+        <div className="p-3 md:p-5">
+          <h3 className="font-bold text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2">{post.title}</h3>
+          <p className="text-gray-400 text-sm md:text-base mb-2 md:mb-3">Posted on {formatDate(post.date)}</p>
+          <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-4">
             {post.tags && post.tags.map((tag, index) => (
-              <span key={index} className={`${getTagColor(tag)} text-base px-3 py-1 rounded shadow-sm`}>
+              <span key={index} className={`${getTagColor(tag)} text-xs md:text-sm px-2 md:px-3 py-1 rounded shadow-sm`}>
                 {tag}
               </span>
             ))}
           </div>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 text-sm md:text-base line-clamp-3">
             {post.excerpt}
           </p>
         </div>
@@ -95,7 +99,7 @@ export default function OriginMC() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#13141d] text-white mt-6">
+    <div className="min-h-screen bg-[#13141d] text-white mt-6 w-full">
       {/* Page Header */}
       {/* not necessary */}
       {/* <div className="container mx-auto md:w-4/5 px-4 pt-8">
@@ -116,12 +120,12 @@ export default function OriginMC() {
       </div> */}
 
       {/* Latest News Section */}
-      <div className="container mx-auto md:w-4/5 px-4 py-8">
+      <div className="w-full container mx-auto px-4 md:w-4/5 py-8">
         <div onClick={()=>navigate('/blog')} className="flex items-center gap-3 mb-8 hover:cursor-pointer">
           <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
             <img src={arrow} alt="" />
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold">Latest News</h2>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">Latest News</h2>
         </div>
 
         {loading && (
@@ -139,13 +143,13 @@ export default function OriginMC() {
 
         {!loading && !error && featuredPosts.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-xl text-gray-400">No posts available</p>
+            <p className="text-xl text-gray-400 text-wrap ">No posts available</p>
             <p className="text-gray-400 mt-2">Check back later for news and updates!</p>
           </div>
         )}
 
         {!loading && !error && featuredPosts.length > 0 && (
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             {featuredPosts.map((post) => (
               <NewsCard key={post.id} post={post} />
             ))}
@@ -154,7 +158,7 @@ export default function OriginMC() {
       </div>
       {/* <JoinDiscord /> */}
       {/* Discord Community Section - Updated to match the image */}
-      <div className="container mx-auto md:w-4/5 px-4 py-8 md:py-16">
+      <div className="w-full container mx-auto px-4 md:w-4/5 py-8 md:py-16">
   <div className="bg-[#13141d] border border-gray-800 rounded-xl flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-lg">
     {/* Left Side - Minecraft Character */}
     <div className="relative z-10 p-6 md:p-8">
@@ -166,19 +170,16 @@ export default function OriginMC() {
     </div>
 
     {/* Center Content */}
-    <div className="text-center md:text-left relative z-10 p-4 md:p-6 flex-1">
+    <div className="text-center md:text-left relative z-10 p-4 md:p-6 flex-1 ">
       <h2 className="text-xl md:text-2xl font-bold mb-2">
         Join our discord community!
       </h2>
-      <p className="text-gray-400 text-sm md:text-base">
+      <p className="text-gray-400 text-ellipsis text-sm md:text-base">
         Find new friends to explore dungeons, build a <span className="text-blue-400">town</span> and discover <span className="text-red-400">rich</span> together.
-        <br className="hidden md:block" />
+        <br className="hidden md:block " />
         We also offer <span className="font-semibold">NVT</span> support.
       </p>
-    </div>
-
-    {/* Discord Button */}
-    <div className="relative z-10 p-6 md:p-8">
+      <div className="relative z-10 p-6 md:p-8">
       <a
         href="http://pvpingmc.net/discord"
         target="_blank"
@@ -188,9 +189,13 @@ export default function OriginMC() {
         Join discord!
       </a>
     </div>
+    </div>
+
+    {/* Discord Button */}
+    
 
     {/* Right Side Decorative Image */}
-    <div className="absolute right-0 top-0 h-full w-1/3">
+    <div className="hidden md:block   h-[17rem] w-2/5">
       <img
         src={frame}
         alt="Server Background"

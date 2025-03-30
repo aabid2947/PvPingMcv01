@@ -15,11 +15,11 @@ import pvping from "./assets/thumb_logo.png"
 // Universal Footer Component
 const Footer = () => {
   return (
-    <footer className="bg-[#0a0b11] border-t border-gray-800/30 py-8">
-      <div className="container mx-auto w-full md:w-4/5 px-4">
+    <footer className="bg-[#0a0b11] border-t border-gray-800/30 py-8 w-full">
+      <div className="w-full container mx-auto md:w-4/5 px-4">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="mb-6 md:mb-0 text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start mb-2">
+            <div className="flex flex-wrap items-center justify-center md:justify-start mb-2">
               <span className="text-white font-medium mr-1">Copyright ©</span>
               <span className="text-blue-500 font-medium mr-1">OriginMC</span>
               <span className="text-white font-medium">2023. All Rights Reserved.</span>
@@ -43,72 +43,72 @@ function App() {
   const isHomePage = location.pathname === '/';
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
-      <main className='mt-6'>
+    <div className="w-full min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
+      <main className='mt-6 w-full overflow-x-hidden'>
         <Routes>
           <Route path="/" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <Home />
               </div>
-            </>
+            </div>
           } />
           <Route path="/blog" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <BlogOverview />
               </div>
-            </>
+            </div>
           } />
           <Route path="/blog/:id" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <BlogDetail />
               </div>
-            </>
+            </div>
           } />
           <Route path="/store" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <Store />
               </div>
-            </>
+            </div>
           } />
           <Route path="/vote" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <Vote />
               </div>
-            </>
+            </div>
           } />
           <Route path="/rules" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <Rules />
               </div>
-            </>
+            </div>
           } />
           <Route path="/pvpingmc" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <PvPingMC />
               </div>
-            </>
+            </div>
           } />
           <Route path="/originpass" element={
-            <>
+            <div className="w-full">
               <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px]">
+              <div className="bg-[#13141d] mt-[-30px] w-full">
                 <OriginPass />
               </div>
-            </>
+            </div>
           } />
         </Routes>
       </main>

@@ -96,9 +96,35 @@ const BlogDetail = () => {
     }
   };
 
+  // Add CSS styles for blog content images
+  useEffect(() => {
+    // Add a stylesheet or inline style to ensure images in blog content are responsive
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .blog-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+      }
+      .blog-content a {
+        color: #60a5fa;
+        text-decoration: none;
+      }
+      .blog-content a:hover {
+        text-decoration: underline;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <div className="w-full bg-[#13141d] text-white min-h-screen pt-6">
-      <div className="container mx-auto md:w-4/5 px-4 py-6">
+      <div className="w-full container mx-auto md:w-4/5 px-4 py-6">
         {/* Back Button */}
         <Link 
           to="/blog" 
@@ -132,7 +158,7 @@ const BlogDetail = () => {
         {!loading && !error && post && (
           <>
             {/* Main Blog Post */}
-            <div className="bg-[#111827]/60 backdrop-blur-sm rounded-2xl p-8 shadow-xl shadow-blue-900/10 mb-12">
+            <div className="bg-gradient-to-b from-[#0a0d14] to-[#151d28] backdrop-blur-sm rounded-2xl p-4 md:p-8 shadow-xl shadow-blue-900/10 mb-12">
               {/* Top Meta Section */}
               <div className="mb-6 flex flex-wrap gap-2">
                 {post.tags && post.tags.map((tag, index) => (
@@ -146,7 +172,7 @@ const BlogDetail = () => {
               </div>
               
               {/* Title */}
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">{post.title}</h1>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">{post.title}</h1>
               
               {/* Post Metadata */}
               <div className="mb-8 text-gray-400 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -189,15 +215,19 @@ const BlogDetail = () => {
               {/* Featured Image */}
               <div className="rounded-xl overflow-hidden mb-8 shadow-lg">
                 <img 
-                  src={post.thumbnail ? post.thumbnail : storeImg}
+                  src={post.thumbnail || storeImg}
                   alt={post.title}
                   className="w-full h-auto object-cover max-h-[400px]"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = storeImg;
+                  }}
                 />
               </div>
               
               {/* Blog Content */}
               <div 
-                className="prose prose-lg prose-invert max-w-none prose-headings:text-blue-300 prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg"
+                className="prose prose-sm md:prose-base lg:prose-lg prose-invert max-w-none prose-headings:text-blue-300 prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:w-full prose-img:max-w-full blog-content"
                 dangerouslySetInnerHTML={{ __html: post.contentHtml }}
               ></div>
               

@@ -7,6 +7,11 @@ import matter from 'gray-matter';
  * @returns {string} HTML content
  */
 export function parseMarkdown(markdown) {
+  // Ensure external images are rendered correctly by preserving URLs
+  marked.setOptions({
+    breaks: true,
+    gfm: true
+  });
   return marked(markdown);
 }
 
@@ -94,14 +99,14 @@ export async function getAllPosts() {
               return null;
             }
             
-            // Convert markdown content to HTML
-            const contentHtml = marked(content);
+            // Convert markdown content to HTML, ensuring images are handled properly
+            const contentHtml = parseMarkdown(content);
             
             return {
               id: slug,
               title: frontMatter.title,
               date: frontMatter.date,
-              thumbnail: frontMatter.thumbnail,
+              thumbnail: frontMatter.thumbnail || null,
               tags: frontMatter.tags || [],
               excerpt: frontMatter.excerpt || '',
               contentHtml,
