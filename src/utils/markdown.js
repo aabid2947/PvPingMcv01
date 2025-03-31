@@ -210,10 +210,10 @@ export async function getAllPosts() {
               console.warn(`Missing required frontmatter in ${filename}`);
               return null;
             }
-            
-            return {
-              id: slug,
-              title: data.title,
+      
+      return {
+        id: slug,
+        title: data.title,
               date: data.date || data.date_published || new Date().toISOString().split('T')[0],
               thumbnail: data.thumbnail || data.image_url || null,
               tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []),

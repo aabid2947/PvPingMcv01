@@ -13,14 +13,9 @@ const mockBasket = {
   items: []
 };
 
-// Check if the Tebex SDK is loaded
-const isTebexLoaded = () => {
-  // In development mode, always return true to prevent errors
-  if (isDevelopmentMode) {
-    console.log('Development mode: using Tebex mock functions');
-    return true;
-  }
-  return typeof window.tebex !== 'undefined';
+// Check if Tebex SDK is loaded
+export const isTebexLoaded = () => {
+  return typeof window !== 'undefined' && window.tebex !== undefined;
 };
 
 // Initialize Tebex with your store ID
@@ -146,51 +141,42 @@ const getBasket = async (basketId) => {
   }
 };
 
-// Create and open checkout in modal
-const openCheckout = (basketId, options = {}) => {
-  if (isDevelopmentMode) {
-    console.log(`Development mode: Setting up mock checkout for basket ${basketId}`);
-    
-    // In development, simulate a successful checkout after a delay
-    setTimeout(() => {
-      if (options.onSuccess) {
-        options.onSuccess();
-      }
-    }, 3000);
-    
-    return true;
-  }
-
-  if (!isTebexLoaded()) {
-    throw new Error('Tebex SDK not loaded');
-  }
-  
-  if (!basketId) {
-    throw new Error('Basket ID is required');
-  }
-  
+// Open Tebex checkout
+export const openCheckout = async ({
+  username,
+  edition,
+  packageId,
+  checkoutContainer,
+  onSuccess,
+  onFailure
+}) => {
   try {
-    console.log(`Setting up checkout for basket ${basketId}`);
-    window.tebex.checkout.setup(basketId, {
-      embedElement: options.embedElement || null,
-      onSuccess: options.onSuccess || (() => {
-        console.log('Checkout completed successfully');
-      }),
-      onCancel: options.onCancel || (() => {
-        console.log('Checkout cancelled by user');
-      }),
-      onError: options.onError || ((error) => {
-        console.error('Checkout error:', error);
-      }),
-      onLoad: options.onLoad || (() => {
-        console.log('Checkout loaded');
-      })
+    if (!isTebexLoaded()) {
+      throw new Error('Tebex SDK not loaded');
+    }
+
+    // Configure checkout
+    window.tebex.checkout.setUsername(username);
+    window.tebex.checkout.setGameType(edition === 'java' ? 'java' : 'bedrock');
+    window.tebex.checkout.setPackage(packageId);
+
+    // Open checkout in container
+    window.tebex.checkout.open(checkoutContainer);
+
+    // Listen for checkout events
+    window.tebex.checkout.on('success', () => {
+      onSuccess();
     });
-    
+
+    window.tebex.checkout.on('error', (error) => {
+      onFailure(error);
+    });
+
     return true;
   } catch (error) {
-    console.error('Failed to set up checkout:', error);
-    throw new Error(error.message || 'Failed to set up checkout. Please try again.');
+    console.error('Tebex checkout error:', error);
+    onFailure(error);
+    return false;
   }
 };
 

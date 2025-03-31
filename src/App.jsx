@@ -11,6 +11,7 @@ import HeroSection from "./pages/HeroSection.jsx"
 import OriginPass from './pages/OriginPass'
 import { Link, useLocation } from 'react-router-dom'
 import pvping from "./assets/thumb_logo.png"
+import { StoreProvider } from './context/StoreContext'
 
 // Universal Footer Component
 const Footer = () => {
@@ -43,77 +44,79 @@ function App() {
   const isHomePage = location.pathname === '/';
 
   return (
-    <div className="w-full min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
-      <main className='mt-6 w-full overflow-x-hidden'>
-        <Routes>
-          <Route path="/" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <Home />
+    <StoreProvider>
+      <div className="w-full min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
+        <main className='mt-6 w-full overflow-x-hidden'>
+          <Routes>
+            <Route path="/" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <Home />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/blog" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <BlogOverview />
+            } />
+            <Route path="/blog" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <BlogOverview />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/blog/:id" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <BlogDetail />
+            } />
+            <Route path="/blog/:id" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <BlogDetail />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/store" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <Store />
+            } />
+            <Route path="/store" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <Store />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/vote" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <Vote />
+            } />
+            <Route path="/vote" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <Vote />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/rules" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <Rules />
+            } />
+            <Route path="/rules" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <Rules />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/pvpingmc" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <PvPingMC />
+            } />
+            <Route path="/pvpingmc" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <PvPingMC />
+                </div>
               </div>
-            </div>
-          } />
-          <Route path="/originpass" element={
-            <div className="w-full">
-              <HeroSection />
-              <div className="bg-[#13141d] mt-[-30px] w-full">
-                <OriginPass />
+            } />
+            <Route path="/originpass" element={
+              <div className="w-full">
+                <HeroSection />
+                <div className="bg-[#13141d] mt-[-30px] w-full">
+                  <OriginPass />
+                </div>
               </div>
-            </div>
-          } />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+            } />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </StoreProvider>
   )
 }
 
