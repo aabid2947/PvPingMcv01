@@ -73,6 +73,29 @@ const BlogDetail = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
   
+  // Render tags helper
+  const renderTags = (tags) => {
+    if (!tags) return null;
+    
+    // If tags is a string, split it by spaces
+    const tagsArray = Array.isArray(tags) 
+      ? tags 
+      : typeof tags === 'string' 
+        ? tags.split(' ').filter(Boolean)
+        : [];
+    
+    if (tagsArray.length === 0) return null;
+    
+    return tagsArray.map((tag, index) => (
+      <span 
+        key={index} 
+        className={`${getTagColor(tag)} text-sm px-3 py-1 rounded mr-2 mb-2 inline-block`}
+      >
+        {tag}
+      </span>
+    ));
+  };
+  
   // Share the post
   const sharePost = (platform) => {
     const url = window.location.href;
@@ -161,14 +184,7 @@ const BlogDetail = () => {
             <div className="bg-gradient-to-b from-[#0a0d14] to-[#151d28] backdrop-blur-sm rounded-2xl p-4 md:p-8 shadow-xl shadow-blue-900/10 mb-12">
               {/* Top Meta Section */}
               <div className="mb-6 flex flex-wrap gap-2">
-                {post.tags && post.tags.map((tag, index) => (
-                  <span 
-                    key={index} 
-                    className={`${getTagColor(tag)} text-sm px-3 py-1 rounded`}
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {renderTags(post.tags)}
               </div>
               
               {/* Title */}
@@ -235,14 +251,7 @@ const BlogDetail = () => {
               <div className="mt-8 pt-6 border-t border-gray-800">
                 <h3 className="text-xl font-semibold mb-3">Tags</h3>
                 <div className="flex flex-wrap gap-2">
-                  {post.tags && post.tags.map((tag, index) => (
-                    <span 
-                      key={index} 
-                      className={`${getTagColor(tag)} text-sm px-3 py-1 rounded`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {renderTags(post.tags)}
                 </div>
               </div>
             </div>

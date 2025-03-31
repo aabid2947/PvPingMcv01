@@ -11,7 +11,7 @@ import JoinDiscord from "../components/JoinDiscord";
 
 // News card component with hover animation and link to blog detail
 const NewsCard = ({ post }) => {
-  // Get tag color function
+  // Function to get tag colors
   const getTagColor = (tag) => {
     switch (tag) {
       case 'news':
@@ -29,14 +29,32 @@ const NewsCard = ({ post }) => {
     }
   };
 
-  // Format the date
+  // Format date
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
- 
+
+  // Ensure tags are in array format
+  const renderTags = () => {
+    if (!post.tags) return null;
+    
+    // If tags is a string, split it by spaces
+    const tagsArray = Array.isArray(post.tags) 
+      ? post.tags 
+      : typeof post.tags === 'string' 
+        ? post.tags.split(' ').filter(Boolean)
+        : [];
+    
+    return tagsArray.map((tag, index) => (
+      <span key={index} className={`${getTagColor(tag)} text-xs md:text-sm px-2 md:px-3 py-1 rounded shadow-sm`}>
+        {tag}
+      </span>
+    ));
+  };
+
   return (
-    <Link to={`/blog/${post.id}`} className="block w-full">
+    <Link to={`/blog/${post.id}`} className="block h-full">
       <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-105 hover:shadow-xl hover:shadow-blue-900/20 h-full">
         <img
           src={post.thumbnail ? post.thumbnail : storeImg}
@@ -53,11 +71,7 @@ const NewsCard = ({ post }) => {
           <h3 className="font-bold text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2">{post.title}</h3>
           <p className="text-gray-400 text-sm md:text-base mb-2 md:mb-3">Posted on {formatDate(post.date)}</p>
           <div className="flex flex-wrap gap-1 md:gap-2 mb-2 md:mb-4">
-            {post.tags && post.tags.map((tag, index) => (
-              <span key={index} className={`${getTagColor(tag)} text-xs md:text-sm px-2 md:px-3 py-1 rounded shadow-sm`}>
-                {tag}
-              </span>
-            ))}
+            {renderTags()}
           </div>
           <p className="text-gray-400 text-sm md:text-base line-clamp-3">
             {post.excerpt}

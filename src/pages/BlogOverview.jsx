@@ -32,6 +32,10 @@ const BlogCard = ({ post }) => {
         return 'bg-cyan-600';
       case 'tutorial':
         return 'bg-emerald-600';
+      case 'admin':
+        return 'bg-violet-600';
+      case 'maintenance':
+        return 'bg-amber-600';
       default:
         return 'bg-gray-600';
     }
@@ -39,13 +43,51 @@ const BlogCard = ({ post }) => {
 
   // Format the date
   const formatDate = (dateString) => {
+    if (!dateString) return 'No date';
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    } catch (e) {
+      console.error('Date parsing error:', e);
+      return dateString;
+    }
+  };
+  
+  // Ensure tags are in array format
+  const renderTags = () => {
+    if (!post.tags) return null;
+    
+    // If tags is a string, split it by spaces
+    const tagsArray = Array.isArray(post.tags) 
+      ? post.tags 
+      : typeof post.tags === 'string' 
+        ? post.tags.split(' ').filter(Boolean)
+        : [];
+    
+    if (tagsArray.length === 0) return null;
+    
+    // Limit to 3 visible tags
+    const visibleTags = tagsArray.slice(0, 3);
+    
+    return (
+      <>
+        {visibleTags.map((tag, index) => (
+          <span key={index} className={`${getTagColor(tag)} text-xs font-medium px-2 py-1 rounded shadow-sm`}>
+            {tag}
+          </span>
+        ))}
+        {tagsArray.length > 3 && (
+          <span className="bg-gray-700 text-xs font-medium px-2 py-1 rounded shadow-sm">
+            +{tagsArray.length - 3}
+          </span>
+        )}
+      </>
+    );
   };
 
   return (
-    <Link to={`/blog/${post.id}`} className="block">
-      <div className="bg-[#13141d] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20">
+    <Link to={`/blog/${post.id}`} className="block h-full">
+      <div className="bg-[#13141d] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:transform hover:scale-102 hover:shadow-xl hover:shadow-blue-900/20 h-full flex flex-col">
         <div className="h-48 relative">
           <img 
             src={post.thumbnail || storeImg} 
@@ -58,22 +100,13 @@ const BlogCard = ({ post }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
           <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-            {post.tags && post.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className={`${getTagColor(tag)} text-xs font-medium px-2 py-1 rounded shadow-sm`}>
-                {tag}
-              </span>
-            ))}
-            {post.tags && post.tags.length > 3 && (
-              <span className="bg-gray-700 text-xs font-medium px-2 py-1 rounded shadow-sm">
-                +{post.tags.length - 3}
-              </span>
-            )}
+            {renderTags()}
           </div>
         </div>
-        <div className="p-5">
+        <div className="p-5 flex-grow flex flex-col">
           <p className="text-gray-400 text-sm mb-2">Posted on {formatDate(post.date)}</p>
           <h3 className="font-bold text-2xl mb-3 bg-gradient-to-r from-white to-gray-300 text-transparent bg-clip-text">{post.title}</h3>
-          <p className="text-gray-400 text-base line-clamp-3">
+          <p className="text-gray-400 text-base line-clamp-3 flex-grow">
             {post.excerpt}
           </p>
           <div className="mt-4 text-blue-400 text-sm font-medium">Read More →</div>
@@ -87,12 +120,40 @@ const BlogOverview = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
+        console.log('Starting to fetch blog posts...');
+        
+        const startTime = performance.now();
         const allPosts = await getAllPosts();
+        console.log(allPosts)
+        const endTime = performance.now();
+        
+        console.log(`Blog post fetching took ${(endTime - startTime).toFixed(2)}ms`);
+        
+        if (!allPosts || allPosts.length === 0) {
+          console.warn('No posts returned from getAllPosts');
+          setError('No blog posts found');
+          setLoading(false);
+          return;
+        }
+        
+        const postInfo = allPosts.map(post => ({
+          id: post.id,
+          title: post.title,
+          date: post.date
+        }));
+        
+        console.log(`Loaded ${allPosts.length} blog posts successfully:`, postInfo);
+        setDebugInfo({
+          count: allPosts.length,
+          posts: postInfo,
+          fetchTime: (endTime - startTime).toFixed(2)
+        });
         
         // Sort posts by date (newest first)
         const sortedPosts = allPosts.sort((a, b) => {
@@ -103,7 +164,7 @@ const BlogOverview = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching blog posts:', err);
-        setError('Failed to load blog posts');
+        setError('Failed to load blog posts: ' + (err.message || 'Unknown error'));
         setLoading(false);
       }
     };
@@ -155,11 +216,32 @@ const BlogOverview = () => {
         )}
         
         {!loading && !error && posts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {posts.map(post => (
-              <BlogCard key={post.id} post={post} />
-            ))}
-          </div>
+          <>
+            {/* Post Counter */}
+            <div className="mb-6 text-gray-400">
+              <p>Showing {posts.length} blog posts</p>
+            </div>
+            
+            {/* Blog Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {posts.map(post => (
+                <BlogCard key={post.id} post={post} />
+              ))}
+            </div>
+            
+            {/* Debug Information (only in development) */}
+            {process.env.NODE_ENV === 'development' && debugInfo && (
+              <div className="mt-10 p-4 bg-gray-800 rounded-lg text-xs overflow-auto">
+                <h3 className="text-white font-bold mb-2">Debug Info</h3>
+                <p>Posts loaded: {debugInfo.count}</p>
+                <p>Fetch time: {debugInfo.fetchTime}ms</p>
+                <details>
+                  <summary className="cursor-pointer text-blue-400">Post List</summary>
+                  <pre className="mt-2 text-gray-400 overflow-x-auto">{JSON.stringify(debugInfo.posts, null, 2)}</pre>
+                </details>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

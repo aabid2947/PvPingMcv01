@@ -15,6 +15,114 @@ export function parseMarkdown(markdown) {
   return marked(markdown);
 }
 
+/**
+ * Simple frontmatter parser that works in browsers
+ * Extracts YAML frontmatter between --- delimiters
+ * @param {string} text - The markdown text with frontmatter
+ * @returns {Object} { data, content }
+ */
+function parseFrontmatter(text) {
+  // Check if the text starts with ---
+  if (!text.startsWith('---')) {
+    return { data: {}, content: text };
+  }
+
+  // Find the end of the frontmatter section
+  const end = text.indexOf('---', 3);
+  if (end === -1) {
+    return { data: {}, content: text };
+  }
+
+  const frontmatterText = text.substring(3, end).trim();
+  const content = text.substring(end + 3).trim();
+  
+  // Parse the YAML-like frontmatter
+  const data = {};
+  frontmatterText.split('\n').forEach(line => {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex !== -1) {
+      const key = line.substring(0, colonIndex).trim();
+      let value = line.substring(colonIndex + 1).trim();
+      
+      // Special handling for tags
+      if (key === 'tags') {
+        // Check if value is a space-separated string or already an array
+        if (value === '') {
+          // Empty array if no tags
+          data[key] = [];
+        } else if (value.startsWith('[') && value.endsWith(']')) {
+          // Handle array format: [tag1, tag2]
+          try {
+            data[key] = JSON.parse(value);
+          } catch (e) {
+            // If parsing fails, use as space-separated
+            data[key] = value.split(' ').filter(Boolean);
+          }
+        } else {
+          // For space-separated format: "tag1 tag2 tag3"
+          data[key] = value.split(' ').filter(Boolean);
+        }
+      }
+      // Special handling for dates
+      else if (key === 'date' || key.includes('date_')) {
+        if (value.includes('T')) {
+          // If it's an ISO format, parse it
+          data[key] = value;
+        } else {
+          // Simple date format
+          data[key] = value;
+        }
+      }
+      // Handle special fields from the sample format
+      else if (key === 'image_url' || key === 'thumbnail') {
+        data['thumbnail'] = value; // Normalize to 'thumbnail'
+      }
+      else if (key === 'slug') {
+        data['id'] = value; // Save slug as id for consistency
+      }
+      // Handle arrays (lines like "tags:" followed by "  - tag1")
+      else if (value === '') {
+        // This might be the start of a list
+        data[key] = [];
+      } else if (value.startsWith('"') && value.endsWith('"')) {
+        // Handle quoted strings
+        data[key] = value.substring(1, value.length - 1);
+      } else if (!isNaN(value)) {
+        // Handle numbers
+        data[key] = Number(value);
+      } else {
+        // Regular strings
+        data[key] = value;
+      }
+    } else if (line.trim().startsWith('- ') && Object.keys(data).length > 0) {
+      // This is a list item, add it to the last defined key
+      const lastKey = Object.keys(data)[Object.keys(data).length - 1];
+      if (Array.isArray(data[lastKey])) {
+        data[lastKey].push(line.trim().substring(2));
+      }
+    }
+  });
+
+  // Ensure we have an ID field - either from slug or filename in the calling function
+  if (!data.id && data.slug) {
+    data.id = data.slug;
+  }
+
+  // Ensure 'date' is properly set
+  if (!data.date && data.date_published) {
+    data.date = data.date_published;
+  }
+
+  // Ensure we always have a tags array
+  if (!data.tags) {
+    data.tags = [];
+  } else if (!Array.isArray(data.tags)) {
+    data.tags = [data.tags];
+  }
+
+  return { data, content };
+}
+
 // Static blog posts for fallback when import.meta.glob doesn't work
 const staticBlogPosts = [
   {
@@ -49,96 +157,97 @@ const staticBlogPosts = [
   }
 ];
 
+// Hardcoded list of known blog posts for development mode
+const knownBlogFiles = [
+  '2024-05-01-summer-event.md',
+  '2024-04-25-faction-wars.md',
+  '2024-04-15-server-update.md',
+  '2024-04-10-arena-tournament.md',
+  '2024-04-06-skyblock-guide.md',
+  '2024-04-05-anniversary-celebration.md',
+  '2024-04-04-new-survival-map.md',
+  '2024-04-03-summer-event-announcement.md',
+  '2024-04-02-new-pvp-arena.md',
+  '2024-04-01-blog-system-guide.md',
+  '2024-03-30-prison-announcement.md',
+  '2024-03-15-beginner-guide.md',
+  '2024-01-10-welcome-post.md',
+  '2023-10-15-halloween-event.md',
+  '2023-08-02-server-update.md',
+  '2023-07-15-welcome-to-originmc.md',
+  '2025-05-34-Test.md'
+];
+
 /**
  * Loads blog posts from the content directory
  * @returns {Promise<Array>} Array of blog posts with metadata
  */
 export async function getAllPosts() {
+  console.log('Fetching all posts...');
+  let posts = [];
+  
+  // In development mode, use the hardcoded list of files and fetch directly
   try {
-    console.log('Fetching all posts...');
-    
-    // Use require.context equivalent in Vite to get all markdown files
-    let posts = [];
-    
-    try {
-      // Try using import.meta.glob first
-      const postFiles = import.meta.glob('/content/blog/*.md', { eager: true });
-      console.log('Found post files:', Object.keys(postFiles).length);
-      
-      if (Object.keys(postFiles).length > 0) {
-        // Process each file
-        posts = Object.entries(postFiles).map(([path, module]) => {
+    console.log('Loading blog posts from content/blog directory...');
+    const fetchPromises = knownBlogFiles.map(filename => 
+      fetch(`/content/blog/${filename}`)
+        .then(response => {
+          if (!response.ok) {
+            console.warn(`Failed to fetch ${filename}: ${response.status}`);
+            return null;
+          }
+          return response.text();
+        })
+        .then(text => {
+          if (!text) return null;
           try {
-            // Extract the filename (slug) from the path
-            const slug = path.replace('/content/blog/', '').replace('.md', '');
+            // Use our custom frontmatter parser instead of matter
+            const { data, content } = parseFrontmatter(text);
+            const slug = filename.replace('.md', '');
             
-            // Get frontmatter and content based on the module format
-            let frontMatter, content;
-            
-            if (module.frontMatter && module.content) {
-              // If it's already processed by our Vite plugin
-              frontMatter = module.frontMatter;
-              content = module.content;
-            } else if (module.default && module.default.frontMatter) {
-              // If export is in default property with frontMatter
-              frontMatter = module.default.frontMatter;
-              content = module.default.content;
-            } else if (typeof module.default === 'string') {
-              // If default export is a string, parse it
-              const parsed = matter(module.default);
-              frontMatter = parsed.data;
-              content = parsed.content;
-            } else {
-              console.error('Unexpected module format:', slug, typeof module, module);
+            // Skip posts without required frontmatter
+            if (!data.title || !data.date) {
+              console.warn(`Missing required frontmatter in ${filename}`);
               return null;
             }
-            
-            // Basic validation
-            if (!frontMatter || !frontMatter.title || !frontMatter.date) {
-              console.error('Missing required frontmatter for post:', slug);
-              return null;
-            }
-            
-            // Convert markdown content to HTML, ensuring images are handled properly
-            const contentHtml = parseMarkdown(content);
             
             return {
               id: slug,
-              title: frontMatter.title,
-              date: frontMatter.date,
-              thumbnail: frontMatter.thumbnail || null,
-              tags: frontMatter.tags || [],
-              excerpt: frontMatter.excerpt || '',
-              contentHtml,
-              content
+              title: data.title,
+              date: data.date || data.date_published || new Date().toISOString().split('T')[0],
+              thumbnail: data.thumbnail || data.image_url || null,
+              tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []),
+              excerpt: data.excerpt || content.substring(0, 150) + '...',
+              content,
+              contentHtml: parseMarkdown(content)
             };
           } catch (error) {
-            console.error('Error processing post file:', path, error);
+            console.error(`Error parsing ${filename}:`, error);
             return null;
           }
-        }).filter(Boolean); // Remove null entries
-      } else {
-        console.warn('No blog post files found using import.meta.glob, using static fallback posts');
-      }
-    } catch (importError) {
-      console.error('Error using import.meta.glob:', importError);
-    }
+        })
+        .catch(error => {
+          console.error(`Error fetching ${filename}:`, error);
+          return null;
+        })
+    );
     
-    // If no posts were loaded, use the static fallback
-    if (posts.length === 0) {
-      console.warn('Using static fallback posts');
-      posts = staticBlogPosts;
-    }
+    const results = await Promise.all(fetchPromises);
+    posts = results.filter(post => post !== null);
     
-    console.log('Successfully processed posts:', posts.length);
-    
-    // Sort by date (newest first)
-    return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    console.log(`Successfully loaded ${posts.length} posts via direct fetch`);
   } catch (error) {
-    console.error('Error getting all posts:', error);
-    // If all else fails, return the static posts
-    return staticBlogPosts;
+    console.error('Error loading posts via direct fetch:', error);
   }
+  
+  // If no posts were loaded, use the static fallback
+  if (posts.length === 0) {
+    console.warn('Using static fallback posts');
+    posts = staticBlogPosts;
+  }
+  
+  // Sort by date (newest first)
+  return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 /**
