@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
 /* Ensure all root elements take full width */
 html, body, #root {
   width: 100%;
@@ -23,6 +25,55 @@ html, body, #root {
   .container {
     max-width: 80%;
   }
+}
+
+/* Modal and dialog styles to ensure they stay on top */
+.modal-open,
+.payment-dialog-open,
+.confirmation-modal-open,
+.purchase-modal-open {
+  position: relative;
+  overflow: hidden !important;
+}
+
+/* Higher z-index for modals */
+[id^="tebex-checkout-container"] {
+  z-index: 99999 !important;
+}
+
+/* Ensure iframe contents are visible */
+iframe {
+  z-index: 1;
+  position: relative;
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-fadeOut {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+/* Purchase modal specific styles */
+#purchase-loading-spinner {
+  background-color: rgba(30, 31, 44, 0.95);
+}
+
+#tebex-checkout-container {
+  border: none;
+  border-radius: 0.5rem;
 }
 
 @layer components {

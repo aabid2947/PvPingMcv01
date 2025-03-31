@@ -3,14 +3,47 @@ import React, { useState, useEffect } from 'react';
 import { FiShoppingCart, FiPackage, FiStar, FiShield, FiTool, FiShoppingBag, FiInfo } from 'react-icons/fi';
 import arrow from "../assets/arrow.png"
 import { getStoreProducts, getStoreCategories, getTebexCategories, getPackageDetails } from '../services/api';
+import PurchaseButton from '../components/PurchaseButton';
+import { useUser } from '../context/UserContext';
+
+// Load Tebex SDK
+const loadTebexScript = () => {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src*="tebex.io"]')) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    // Use the official Tebex CDN URL
+    script.src = 'https://js.tebex.io/v/1.js';
+    script.async = true;
+    script.onload = () => {
+      if (window.tebex) {
+        // Your store ID - replace 'your-store-id' with your actual Tebex store ID
+        window.tebex.store.setup('your-store-id');
+        console.log('Tebex SDK loaded successfully');
+        resolve();
+      } else {
+        reject(new Error('Tebex SDK failed to load'));
+      }
+    };
+    script.onerror = () => reject(new Error('Could not load Tebex SDK'));
+    document.head.appendChild(script);
+  });
+};
 
 const StoreItem = ({ id, name, price, description, category, image, url, bestseller }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { isLoggedIn, username } = useUser();
 
   const handleViewDetails = async (e) => {
+    // Prevent event bubbling
     e.preventDefault();
+    e.stopPropagation();
+    
     setShowDetails(true);
     
     if (!details && !loading) {
@@ -26,8 +59,22 @@ const StoreItem = ({ id, name, price, description, category, image, url, bestsel
     }
   };
 
+  const handleCloseDetails = (e) => {
+    // Prevent event bubbling
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    setShowDetails(false);
+  };
+
   return (
-    <div className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105">
+    <div 
+      className="bg-[#111827] rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:transform hover:scale-105"
+     // Prevent clicks from reaching parent elements
+     onClick={(e) => e.stopPropagation()}
+    >
       <div className="relative">
         <div className="h-48 bg-[#1F2937]">
           <img 
@@ -95,7 +142,7 @@ const StoreItem = ({ id, name, price, description, category, image, url, bestsel
               <p className="text-sm text-gray-400">Failed to load details</p>
             )}
             <button 
-              onClick={() => setShowDetails(false)} 
+              onClick={handleCloseDetails} 
               className="mt-2 text-sm text-blue-400 hover:text-blue-300"
             >
               Close details
@@ -104,23 +151,21 @@ const StoreItem = ({ id, name, price, description, category, image, url, bestsel
         )}
         
         <div className="flex flex-col space-y-2">
-          <a 
-            href={url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center justify-center gap-2"
-          >
-            <FiShoppingCart /> Purchase
-          </a>
+          <PurchaseButton 
+            packageId={id}
+            packageName={name}
+            price={price}
+            description={description}
+          />
           
-          {!showDetails && (
+          {/* {!showDetails && (
             <button
               onClick={handleViewDetails}
               className="w-full py-2 px-4 bg-transparent border border-purple-500 text-purple-400 text-sm font-medium rounded-lg hover:bg-purple-900/20 transition-colors flex items-center justify-center gap-2"
             >
               <FiInfo /> View Details
-            </button>
-          )}
+        </button>
+          )} */}
         </div>
       </div>
     </div>
@@ -135,6 +180,36 @@ export default function StorePage() {
   ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tebexLoaded, setTebexLoaded] = useState(false);
+  
+  // Load Tebex SDK
+  useEffect(() => {
+    const loadTebex = async () => {
+      try {
+        // In development mode, we can skip the actual Tebex loading and just set tebexLoaded to true
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Development mode: Skipping Tebex SDK loading');
+          setTebexLoaded(true);
+          return;
+        }
+        
+        await loadTebexScript();
+        setTebexLoaded(true);
+      } catch (error) {
+        console.error('Error loading Tebex SDK:', error);
+        
+        // In development mode, we can still allow the app to function
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Development mode: Continuing despite Tebex loading error');
+          setTebexLoaded(true);
+        } else {
+          setError('Failed to load payment system. Please try again later.');
+        }
+      }
+    };
+    
+    loadTebex();
+  }, []);
   
   useEffect(() => {
     const fetchStoreData = async () => {
@@ -173,53 +248,53 @@ export default function StorePage() {
           
           // Create category list with "All Items" first
           const categoryList = [
-            { id: 'all', name: 'All Items', icon: <FiPackage /> },
+    { id: 'all', name: 'All Items', icon: <FiPackage /> },
             ...Array.from(uniqueCategories.values())
-          ];
-          
+  ];
+  
           setCategories(categoryList);
         } else {
           // Fallback for development if no products
           setStoreItems([
-            {
-              id: 1,
-              name: "VIP Rank",
+    {
+      id: 1,
+      name: "VIP Rank",
               price: "9.99",
-              description: "Get VIP status with special perks and privileges on the server.",
-              category: "ranks",
+      description: "Get VIP status with special perks and privileges on the server.",
+      category: "ranks",
               category_id: "ranks",
               url: "#",
-              bestseller: true
-            },
-            {
-              id: 2,
-              name: "MVP Rank",
+      bestseller: true
+    },
+    {
+      id: 2,
+      name: "MVP Rank",
               price: "19.99",
-              description: "Upgrade to MVP for premium features and exclusive access.",
-              category: "ranks",
+      description: "Upgrade to MVP for premium features and exclusive access.",
+      category: "ranks",
               category_id: "ranks",
               url: "#",
-              bestseller: false
-            },
-            {
-              id: 3,
-              name: "Legendary Crate",
+      bestseller: false
+    },
+    {
+      id: 3,
+      name: "Legendary Crate",
               price: "14.99",
-              description: "Unlock rare items and special rewards with this legendary crate.",
-              category: "crates",
+      description: "Unlock rare items and special rewards with this legendary crate.",
+      category: "crates",
               category_id: "crates",
               url: "#",
-              bestseller: true
-            },
-            {
-              id: 4,
-              name: "Mystery Crate",
+      bestseller: true
+    },
+    {
+      id: 4,
+      name: "Mystery Crate",
               price: "7.99",
-              description: "Try your luck with our mystery crate filled with random goodies.",
-              category: "crates",
+      description: "Try your luck with our mystery crate filled with random goodies.",
+      category: "crates",
               category_id: "crates",
               url: "#",
-              bestseller: false
+      bestseller: false
             }
           ]);
           
@@ -314,11 +389,11 @@ export default function StorePage() {
         )}
         
         {!loading && filteredItems.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredItems.map((item) => (
-              <StoreItem key={item.id} {...item} />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {filteredItems.map((item) => (
+            <StoreItem key={item.id} {...item} />
+          ))}
+        </div>
         )}
         
         <div className="mt-16 bg-[#111827]/80 backdrop-blur-sm rounded-xl p-8 shadow-lg shadow-blue-900/10">

@@ -15,7 +15,8 @@ export default function OriginMC() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const [isPlayerCountLoading, setIsPlayerCountLoading] = useState(true);
-  const [discordCount, setDiscordCount] = useState(847); // Placeholder for actual Discord API call
+  const [discordCount, setDiscordCount] = useState(0);
+  const [isDiscordLoading, setIsDiscordLoading] = useState(true);
   const [copiedServer, setCopiedServer] = useState(false);
   const menuRef = useRef(null);
   const hamburgerRef = useRef(null);
@@ -51,6 +52,37 @@ export default function OriginMC() {
     
     // Set up a refresh interval (every 5 minutes)
     const intervalId = setInterval(fetchPlayerCount, 5 * 60 * 1000);
+    
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Fetch Discord member count from API
+  useEffect(() => {
+    const fetchDiscordCount = async () => {
+      try {
+        setIsDiscordLoading(true);
+        const response = await axios.get('https://discord.com/api/v9/invites/eSq2fk2?with_counts=true&with_expiration=true');
+        
+        if (response.data && response.data.approximate_presence_count) {
+          setDiscordCount(response.data.approximate_presence_count);
+        } else if (response.data && response.data.approximate_member_count) {
+          // Fallback to total member count if online count is not available
+          setDiscordCount(response.data.approximate_member_count);
+        }
+      } catch (error) {
+        console.error('Error fetching Discord member count:', error);
+        // Fallback to default count on error
+        setDiscordCount(642); // Value from the API response
+      } finally {
+        setIsDiscordLoading(false);
+      }
+    };
+
+    fetchDiscordCount();
+    
+    // Set up a refresh interval (every 10 minutes)
+    const intervalId = setInterval(fetchDiscordCount, 10 * 60 * 1000);
     
     // Clean up the interval on component unmount
     return () => clearInterval(intervalId);
@@ -268,7 +300,7 @@ export default function OriginMC() {
                   <img
                     src={pvping}
                     alt="Origin MC Logo"
-                    className="relative z-10 h-60 w-60 md:h-64 md:w-80 mx-auto"
+                    className="relative z-10 h-64 w-64 md:h-64 md:w-80 mx-auto"
                   />
                 </div>
               </div>
@@ -284,7 +316,13 @@ export default function OriginMC() {
                   <p className="text-sm text-blue-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Click to open
                   </p>
-                  <p className="text-blue-400 text-sm mt-2">{discordCount} members online</p>
+                  <p className="text-blue-400 text-sm mt-2">
+                    {isDiscordLoading ? (
+                      <span className="inline-block animate-pulse">Loading members...</span>
+                    ) : (
+                      <span>{discordCount} members online</span>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
