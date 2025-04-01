@@ -15,7 +15,8 @@ export default {
         pathname.includes('.jpg') ||
         pathname.includes('.svg')
       ) {
-        return fetch(request);
+        // Let Cloudflare handle static assets directly
+        return env.ASSETS.fetch(request);
       }
       
       // Handle blog content requests
@@ -37,7 +38,8 @@ export default {
         pathname === '/about' ||
         pathname === '/contact'
       ) {
-        const response = await fetch(new URL('/index.html', request.url));
+        // Fetch index.html directly from the assets
+        const response = await env.ASSETS.fetch(new URL('/index.html', request.url));
         return new Response(response.body, {
           status: 200,
           headers: {
@@ -48,7 +50,7 @@ export default {
       }
       
       // Default route - serve index.html
-      const response = await fetch(new URL('/index.html', request.url));
+      const response = await env.ASSETS.fetch(new URL('/index.html', request.url));
       return new Response(response.body, {
         status: 200,
         headers: {
