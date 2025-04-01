@@ -177,17 +177,15 @@ const BlogOverview = () => {
       <div className="w-full container mx-auto md:w-4/5 px-4 py-12">
         <div className="mb-8 flex items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
+            <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
               <FiBook className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Blog</h1>
-              <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+              <h1 className="text-3xl font-bold text-white">Blog Posts</h1>
+              <div className="w-28 h-1 bg-blue-500 mt-1"></div>
             </div>
           </div>
-          <div className="w-8 h-8 ml-4">
-            <img src={arrow} alt="" />
-          </div>
+          
         </div>
         
         <p className="text-gray-300 text-xl mb-8">

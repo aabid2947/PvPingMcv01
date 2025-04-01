@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FiExternalLink, FiCircle, FiHelpCircle, FiGift, FiClock, FiDollarSign, FiThumbsUp } from 'react-icons/fi';
-import arrow from "../assets/arrow.png";
+
 
 const Vote = () => {
   const votingLinks = [
@@ -10,8 +10,7 @@ const Vote = () => {
     { id: 2, name: "Link 2", url: "#" },
     { id: 3, name: "Link 3", url: "#" },
     { id: 4, name: "Link 4", url: "#" },
-    { id: 5, name: "Link 5", url: "#" },
-    { id: 6, name: "Link 6", url: "#" }
+    { id: 5, name: "Link 5", url: "#" }
   ];
 
   return (
@@ -20,22 +19,20 @@ const Vote = () => {
         {/* Header section */}
         <div className="mb-16 flex items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
+            <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
               <FiThumbsUp className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Vote</h1>
-              <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+              <h1 className="text-3xl font-bold text-white">Server Voting</h1>
+              <div className="w-36 h-1 bg-blue-500 mt-1"></div>
             </div>
           </div>
-          <div className="w-8 h-8 ml-4">
-            <img src={arrow} alt="" />
-          </div>
+      
         </div>
 
         {/* Main vote button */}
         <div className="mb-12">
-          <button className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white text-xl font-bold py-5 rounded-lg hover:from-blue-600 hover:to-blue-800 transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02]">
+          <button className="w-full bg-gradient-to-b from-[#45DFFE] to-[#4996F7] text-white text-xl font-bold py-5 rounded-lg  transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02]">
             VOTE FOR ORIGIN MC TO EARN REWARDS
           </button>
         </div>
@@ -52,19 +49,22 @@ const Vote = () => {
               <p className="text-gray-400 text-sm mb-5">
                 Use all the links below to get the maximum number of rewards for helping preserve in the long server lifetime.
               </p>
-              <div className="grid grid-cols-2 gap-4">
-                {votingLinks.map((link) => (
-                  <div 
-                    key={link.id} 
-                    className="bg-gradient-to-br from-[#1a2337] to-[#232e47] rounded-lg p-4 hover:bg-gradient-to-br hover:from-[#1d2943] hover:to-[#2a3753] transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-blue-900/20 transform hover:scale-105"
-                  >
-                    <a href={link.url} className="text-blue-400 font-medium flex items-center">
-                      <FiExternalLink className="mr-2" />
-                      {link.name}
-                    </a>
-                  </div>
-                ))}
-              </div>
+              <div className="grid grid-cols-2 justify-center gap-4 auto-rows-auto">
+  {votingLinks.map((link, index) => (
+    <div
+      key={link.id}
+      className={`bg-gradient-to-br flex justify-center from-[#1a2337] to-[#232e47] rounded-lg p-4 hover:bg-gradient-to-br hover:from-[#1d2943] hover:to-[#2a3753] transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-blue-900/20 transform hover:scale-105 ${
+        votingLinks.length % 2 !== 0 && index === votingLinks.length - 1 ? "col-span-2 justify-self-center w-3/5" : ""
+      }`}
+    >
+      <a href={link.url} className="text-blue-400 font-medium flex items-center">
+        <FiExternalLink className="mr-2" />
+        {link.name}
+      </a>
+    </div>
+  ))}
+</div>
+
             </div>
           </div>
 

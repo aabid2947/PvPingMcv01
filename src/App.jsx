@@ -18,7 +18,7 @@ import NotFound from './pages/NotFound'
 // Universal Footer Component
 const FooterComponent = () => {
   return (
-    <footer className="bg-[#0a0b11] border-t border-gray-800/30 py-8 w-full">
+    <footer className="bg-[#1D1E29AB] border-t border-gray-800/30 py-8 w-full">
       <div className="w-full container mx-auto md:w-4/5 px-4">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="mb-6 md:mb-0 text-center md:text-left">

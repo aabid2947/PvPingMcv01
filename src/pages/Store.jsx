@@ -1,8 +1,9 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FiBox, FiShoppingCart, FiDollarSign } from 'react-icons/fi';
+import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid } from 'react-icons/fi';
 import PurchaseButton from '../components/PurchaseButton';
 import { initializeTebex } from '../utils/tebexService';
+import { fetchCategories, categorizePackages, getMockPackages } from '../utils/packageService';
 
 // Create context for store data
 export const StoreContext = createContext();
@@ -11,6 +12,8 @@ export const StoreContext = createContext();
 export function StoreProvider({ children }) {
   const [tebexLoaded, setTebexLoaded] = useState(false);
   const [packages, setPackages] = useState([]);
+  const [categorizedPackages, setCategorizedPackages] = useState({});
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -79,62 +82,44 @@ export function StoreProvider({ children }) {
     loadTebexSDK();
   }, []);
 
-  // Load packages when Tebex is loaded
+  // Load packages and categories when Tebex is loaded
   useEffect(() => {
     if (!tebexLoaded) return;
 
-    // Fetch packages (in a real implementation, you would fetch from your API)
-    // For now, we'll use sample data
-    const samplePackages = [
-      {
-        id: 'package-1',
-        name: 'VIP Membership',
-        description: 'Get access to exclusive features and benefits with our VIP membership.',
-        price: '$9.99',
-        features: [
-          'VIP tag in-game and on Discord',
-          'Access to VIP-only areas and commands',
-          'Priority server access during high traffic',
-          '10% discount on future purchases'
-        ],
-        popular: true
-      },
-      {
-        id: 'package-2',
-        name: 'Premium Starter Kit',
-        description: 'Get a head start with premium tools, weapons, and resources.',
-        price: '$4.99',
-        features: [
-          'Diamond tools and armor set',
-          '64x of various valuable resources',
-          '3 exclusive mystery crates',
-          'Special particle effects for 7 days'
-        ],
-        popular: false
-      },
-      {
-        id: 'package-3',
-        name: 'Ultimate Bundle',
-        description: 'The complete package with all benefits and perks combined.',
-        price: '$19.99',
-        features: [
-          'VIP membership for 30 days',
-          'Premium starter kit with double resources',
-          'Exclusive cosmetic items and effects',
-          '5 vote keys and 3 legendary crates'
-        ],
-        popular: true
+    const loadPackagesAndCategories = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch categories from JSON file
+        const fetchedCategories = await fetchCategories();
+        setCategories(fetchedCategories);
+        
+        // In a real implementation, fetch packages from Tebex API
+        // For now, we'll use sample data
+        const packageData = getMockPackages();
+        setPackages(packageData);
+        
+        // Categorize packages
+        const sortedPackages = categorizePackages(packageData, fetchedCategories);
+        setCategorizedPackages(sortedPackages);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading store data:', err);
+        setError('Failed to load store data. Please try again later.');
+        setLoading(false);
       }
-    ];
+    };
 
-    setPackages(samplePackages);
-    setLoading(false);
+    loadPackagesAndCategories();
   }, [tebexLoaded]);
 
   // Context value
   const value = {
     tebexLoaded,
     packages,
+    categorizedPackages,
+    categories,
     loading,
     error,
     setPackages
@@ -156,27 +141,286 @@ export function useStore() {
   return context;
 }
 
+// Helper function to get appropriate icon for category
+const getCategoryIcon = (categoryId) => {
+  switch (categoryId) {
+    case 'vip-packages':
+      return <FiStar className="mr-2 text-yellow-400" />;
+    case 'game-boosts':
+      return <FiTag className="mr-2 text-blue-400" />;
+    default:
+      return <FiPackage className="mr-2 text-purple-400" />;
+  }
+};
+
+// Simple check component for feature lists
+function FiCheck(props) {
+  return (
+    <svg
+      stroke="currentColor"
+      fill="none"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      height="1em"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  );
+}
+
 /**
  * Store page component displaying packages available for purchase
  */
 function Store() {
-  const { packages, loading, error, tebexLoaded } = useStore();
+  const { 
+    categorizedPackages, 
+    loading, 
+    error, 
+    tebexLoaded,
+    categories
+  } = useStore();
+  
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [animating, setAnimating] = useState(false);
+
+  // Handle category change with animation
+  const handleCategoryChange = (categoryId) => {
+    if (categoryId === selectedCategory) return;
+    
+    setAnimating(true);
+    setTimeout(() => {
+      setSelectedCategory(categoryId);
+      setAnimating(false);
+    }, 300);
+  };
+
+  // Render a package card with all details
+  const renderPackageCard = (pkg) => (
+    <div 
+      key={pkg.id} 
+      className={`package-card bg-[#1D1E29] rounded-lg shadow-md overflow-hidden ${
+        pkg.popular ? 'ring-2 ring-purple-500' : ''
+      }`}
+    >
+      {pkg.popular && (
+        <div className="bg-purple-500 text-white text-center py-1 font-medium">
+          Most Popular
+        </div>
+      )}
+
+      <div className="p-6">
+        <h2 className="text-2xl font-bold mb-2">{pkg.name}</h2>
+        <p className="text-gray-400 mb-4">{pkg.description}</p>
+        
+        <div className="text-3xl font-bold text-purple-600 mb-6">
+          {pkg.price}
+        </div>
+        
+        <ul className="mb-6 space-y-2">
+          {pkg.features.map((feature, index) => (
+            <li key={index} className="flex items-start">
+              <FiCheck className="text-green-500 mt-1 mr-2 flex-shrink-0" />
+              <span className="text-gray-300">{feature}</span>
+            </li>
+          ))}
+        </ul>
+        
+        <PurchaseButton 
+          packageDetails={pkg} 
+          tebexStatus={{ loaded: tebexLoaded, error: error }}
+        />
+      </div>
+    </div>
+  );
+
+  // Get all categories for navigation
+  const getCategoryButtons = () => {
+    if (!categorizedPackages || Object.keys(categorizedPackages).length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mb-10">
+        <div className="flex items-center mb-4">
+          <FiFilter className="mr-2 text-blue-400" />
+          <h2 className="text-lg font-medium text-white">Filter by Category</h2>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleCategoryChange('all')}
+            className={`category-btn px-4 py-2 rounded-md transition-all duration-300 ${
+              selectedCategory === 'all'
+                ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+            }`}
+          >
+            <div className="flex items-center">
+              <FiGrid className="mr-2" />
+              All Packages
+            </div>
+          </button>
+          
+          {Object.values(categorizedPackages).map((category) => (
+            category.id !== 'uncategorized' && (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryChange(category.id)}
+                className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
+                  selectedCategory === category.id
+                    ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                    : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+                }`}
+              >
+                {getCategoryIcon(category.id)}
+                {category.name}
+                <span className="ml-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full">
+                  {category.packages.length}
+                </span>
+              </button>
+            )
+          ))}
+          
+          {categorizedPackages.uncategorized && categorizedPackages.uncategorized.packages.length > 0 && (
+            <button
+              onClick={() => handleCategoryChange('uncategorized')}
+              className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
+                selectedCategory === 'uncategorized'
+                  ? 'bg-blue-500 text-white shadow-lg transform scale-105'
+                  : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+              }`}
+            >
+              <FiPackage className="mr-2 text-gray-400" />
+              Other Packages
+              <span className="ml-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full">
+                {categorizedPackages.uncategorized.packages.length}
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Filter packages based on selected category
+  const getFilteredPackages = () => {
+    if (selectedCategory === 'all') {
+      if (Object.values(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
+        // If only uncategorized packages exist, show them without category header
+        return (
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+            {categorizedPackages.uncategorized.packages.map(renderPackageCard)}
+          </div>
+        );
+      } else {
+        // Show all packages grouped by category
+        return (
+          <div className={`transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+            {Object.values(categorizedPackages).map((category) => (
+              <div key={category.id} className="mb-12">
+                <div className="flex items-center mb-6">
+                  {getCategoryIcon(category.id)}
+                  <h2 className="text-2xl font-bold text-white">
+                    {category.name}
+                  </h2>
+                </div>
+                {category.description && (
+                  <p className="text-gray-400 mb-6">{category.description}</p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {category.packages.map(renderPackageCard)}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } else {
+      // Show only the selected category
+      const selectedCategoryData = categorizedPackages[selectedCategory];
+      if (!selectedCategoryData) return null;
+
+      return (
+        <div className={`mb-12 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="flex items-center mb-6">
+            {getCategoryIcon(selectedCategoryData.id)}
+            <h2 className="text-2xl font-bold text-white">
+              {selectedCategoryData.name}
+            </h2>
+          </div>
+          {selectedCategoryData.description && (
+            <p className="text-gray-400 mb-6">{selectedCategoryData.description}</p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {selectedCategoryData.packages.map(renderPackageCard)}
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="store-page container mx-auto px-4 py-8">
       <Helmet>
         <title>Store | PvPing MC</title>
         <meta name="description" content="Browse and purchase packages for the PvPing Minecraft server." />
+        <style>
+          {`
+            @keyframes loaderSpin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            
+            .loader {
+              border: 3px solid rgba(255, 255, 255, 0.1);
+              border-radius: 50%;
+              border-top: 3px solid #3ABCFD;
+              width: 24px;
+              height: 24px;
+              animation: loaderSpin 0.8s linear infinite;
+            }
+            
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .category-fade-in {
+              animation: fadeIn 0.5s ease forwards;
+            }
+            
+            .category-btn:hover {
+              box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            }
+            
+            .package-card {
+              transition: all 0.3s ease;
+            }
+            
+            .package-card:hover {
+              transform: translateY(-5px) scale(1.02);
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            }
+          `}
+        </style>
       </Helmet>
 
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Server Store</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Support our server and enhance your gameplay with our premium packages.
-          All purchases help keep the server running and fund new features.
-        </p>
+      <div className="mb-16 flex items-center">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
+            <FiShoppingCart className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Store</h1>
+            <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+          </div>
+        </div>
       </div>
-
+        
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 max-w-2xl mx-auto">
           <p className="font-bold">Error loading store</p>
@@ -185,88 +429,43 @@ function Store() {
       )}
 
       {loading ? (
-        <div className="flex  justify-center items-center py-16">
+        <div className="flex justify-center items-center py-16">
           <div className="loader"></div>
-          <p className="ml-3">Loading packages...</p>
+          <p className="ml-3 text-gray-300">Loading packages...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {packages.map((pkg) => (
-            <div 
-              key={pkg.id} 
-              className={`bg-[#1D1E29] rounded-lg shadow-md overflow-hidden transition-transform hover:shadow-lg ${
-                pkg.popular ? 'ring-2 ring-purple-500' : ''
-              }`}
-            >
-              {pkg.popular && (
-                <div className="bg-purple-500 text-white text-center py-1 font-medium">
-                  Most Popular
-                </div>
-              )}
-
-              <div className="p-6">
-                <h2 className="text-2xl font-bold mb-2">{pkg.name}</h2>
-                <p className="text-gray-600 mb-4">{pkg.description}</p>
-                
-                <div className="text-3xl font-bold text-purple-600 mb-6">
-                  {pkg.price}
-                </div>
-                
-                <ul className="mb-6 space-y-2">
-                  {pkg.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <FiCheck className="text-green-500 mt-1 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <PurchaseButton packageDetails={pkg} />
-              </div>
-            </div>
-          ))}
+        <div className="space-y-8">
+          {/* Category Navigation Buttons */}
+          <div className="category-fade-in" style={{ animationDelay: '0.1s' }}>
+            {getCategoryButtons()}
+          </div>
+          
+          {/* Display filtered packages */}
+          <div className="category-fade-in" style={{ animationDelay: '0.3s' }}>
+            {getFilteredPackages()}
+          </div>
         </div>
       )}
 
-      <div className="mt-16 bg-purple-600 p-6 rounded-lg shadow-md max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4 flex items-center">
-          <FiDollarSign className="mr-2 text-purple-600" />
+      <div className="mt-16 bg-[#1D1E29] p-6 rounded-lg shadow-md max-w-3xl mx-auto border border-gray-800">
+        <h2 className="text-2xl font-bold mb-4 flex items-center text-white">
+          <FiDollarSign className="mr-2 text-purple-500" />
           Need a custom package?
         </h2>
-        <p className="mb-4">
+        <p className="mb-4 text-gray-300">
           Looking for something specific or want to customize a package for your needs? 
-          Contact our support team and we'll create a custom solution just for you.
+          Contact our support team and we'll be happy to help create a custom solution for you.
         </p>
-        <a 
-          href="https://discord.gg/yourserver" 
-          target="_blank" 
+        <a
+          href="https://discord.gg/pvpingmc"
+          target="_blank"
           rel="noopener noreferrer"
-          className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded inline-block transition-colors"
         >
           Contact Support
         </a>
       </div>
     </div>
-  );
-}
-
-// Component for the checkmark icon
-function FiCheck(props) {
-  return (
-    <svg 
-      stroke="currentColor" 
-      fill="none" 
-      strokeWidth="2" 
-      viewBox="0 0 24 24" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      height="1em" 
-      width="1em" 
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <polyline points="20 6 9 17 4 12"></polyline>
-    </svg>
   );
 }
 

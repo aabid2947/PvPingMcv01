@@ -76,17 +76,15 @@ export default function OriginPass() {
         {/* Header section */}
         <div className="mb-16 flex items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
+            <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
               <FiAward className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Origin Pass <span className="text-sm text-blue-400 font-medium">[Exclusive]</span></h1>
-              <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+              <div className="w-32 h-1 bg-blue-500 mt-2"></div>
             </div>
           </div>
-          <div className="w-8 h-8 ml-4">
-            <img src={arrow} alt="" />
-          </div>
+      
         </div>
 
         {/* Content section */}
@@ -276,9 +274,26 @@ export default function OriginPass() {
                 ))}
               </div>
             </div>
+            
           </div>
+          
         </div>
+        <div className="w-full mt-6 bg-[#1D1E29AB] rounded-md py-8 px-4 relative overflow-hidden">
+      {/* Blue accent lines */}
+      <div className="absolute h-1/2 my-auto left-0 top-0 bottom-0 w-1 bg-cyan-400"></div>
+      <div className="absolute h-1/2 my-auto right-0 top-0 bottom-0 w-1 bg-cyan-400"></div>
+
+      <div className="max-w-3xl mx-auto text-center">
+        <h2 className="text-white text-2xl md:text-3xl font-bold tracking-wide mb-2">
+          READY TO LEVEL UP YOUR GAME EXPERIENCE?
+        </h2>
+        <p className="text-gray-300 text-sm md:text-base">
+          Use the <span className="text-cyan-400">/originpass</span> command in-game to get started!
+        </p>
       </div>
+    </div>
+      </div>
+      
     </div>
   )
 }

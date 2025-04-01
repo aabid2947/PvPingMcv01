@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { FiShoppingCart, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import LoginModal from './LoginModal';
 import PaymentDialog from './PaymentDialog';
-import { useStore } from '../pages/Store';
+import { StoreContext } from '../pages/Store';
 
 /**
  * Button component for purchasing packages
  */
-function PurchaseButton({ packageDetails }) {
+function PurchaseButton({ packageDetails, tebexStatus = { loaded: true, error: null } }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
@@ -16,12 +16,29 @@ function PurchaseButton({ packageDetails }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Get store context to check if Tebex is loaded and if there's an error
-  const { tebexLoaded, error: storeError } = useStore();
+  // Try to get store context if available, fallback to props if not
+  let tebexLoaded, storeError;
+  
+  try {
+    // Only use context if we're within a StoreProvider
+    const storeContext = useContext(StoreContext);
+    if (storeContext) {
+      tebexLoaded = storeContext.tebexLoaded;
+      storeError = storeContext.error;
+    } else {
+      // Use fallback props
+      tebexLoaded = tebexStatus.loaded;
+      storeError = tebexStatus.error;
+    }
+  } catch (err) {
+    // If context is not available, use fallback props
+    tebexLoaded = tebexStatus.loaded;
+    storeError = tebexStatus.error;
+  }
 
   const handlePurchaseClick = () => {
     // Check if there's a store error indicating payment system is unavailable
-    if (storeError && storeError.includes('Payment system')) {
+    if (storeError && storeError.includes && storeError.includes('Payment system')) {
       setError('Payment system is not available at this time. Please try again later.');
       return;
     }
@@ -109,7 +126,7 @@ function PurchaseButton({ packageDetails }) {
         )}
       </button>
       
-      {storeError && !error && storeError.includes('preview only') && (
+      {storeError && !error && storeError.includes && storeError.includes('preview only') && (
         <div className="text-yellow-500 text-sm mt-2 flex items-center">
           <FiAlertCircle className="mr-1" />
           Payment system is in preview mode only

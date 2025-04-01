@@ -1,0 +1,16 @@
+{
+  "categories": [
+    {
+      "id": "vip-packages",
+      "name": "VIP Packages",
+      "description": "Premium memberships with special perks and benefits",
+      "packages": ["3307111", "3307112"]
+    },
+    {
+      "id": "game-boosts",
+      "name": "Game Boosts",
+      "description": "Enhance your gameplay with these special items and abilities",
+      "packages": ["3307114", "3307115", "3307116", "3307117", "3307118"]
+    }
+  ]
+} 

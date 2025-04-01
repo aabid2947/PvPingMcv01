@@ -1,15 +1,13 @@
 import React from "react"
 import pvping from "../assets/thumb_logo.png"
 import { Link, NavLink, useLocation } from "react-router-dom"
-import { Play, ChevronRight, Menu, X, Copy, ExternalLink } from "lucide-react"
+import { Play,  Menu, X, Copy, ExternalLink, ChevronDown } from "lucide-react"
 import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import blue from "../assets/blue.png"
 import green from "../assets/green.png"
-
-import MinecraftServerPromoWithImages from "../components/minecraft-server-promo-with-images";
 
 export default function OriginMC() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,13 +28,13 @@ export default function OriginMC() {
     const fetchPlayerCount = async () => {
       try {
         setIsPlayerCountLoading(true);
-        const response = await axios.get('https://api.mcsrvstat.us/2/play.pvpingmc.net');
-
+        const response = await axios.get('https://api.mcsrvstat.us/3/play.pvpingmc.net');
+        console.log(response.data)
         
         // Check if the server is online and has player data
         if (response.data && response.data.online) {
           if (response.data.players && typeof response.data.players.online === 'number') {
-            setPlayerCount(response.data.players.online);
+            setPlayerCount(response.data.players.max);
           }
         }
       } catch (error) {
@@ -136,8 +134,8 @@ export default function OriginMC() {
   };
 
   // Style classes - updated for smoother transitions
-  const activeClass = "bg-blue-500 px-4 py-1.5 rounded-md font-extrabold transition-all duration-300";
-  const inactiveClass = "hover:text-blue-400 transition-all duration-300 font-medium";
+  const activeClass = "bg-[#3ABCFD] text-[#173B7D] px-4 py-1.5 rounded-md font-bold transition-all duration-300";
+  const inactiveClass = "hover:text-blue-400 transition-all duration-300 font-bold";
   const mobileActiveClass = "bg-blue-500 px-4 py-2 font-extrabold text-left w-full block transition-all duration-300";
   const mobileInactiveClass = "hover:text-blue-400 transition-all duration-300 py-2 text-left font-medium w-full block";
 
@@ -174,7 +172,7 @@ export default function OriginMC() {
         <div className="md:hidden w-6"></div>
 
         {/* Desktop Navigation */}
-        <div className={`hidden md:flex items-center gap-8 mx-auto mt-4 mb-12`}>
+        <div className={`hidden md:flex items-center gap-16 mx-auto mt-5 mb-12`}>
           <NavLink to="/" className={({isActive}) => isActive ? activeClass : inactiveClass} end>
             Home
           </NavLink>
@@ -194,8 +192,8 @@ export default function OriginMC() {
             Rules
           </NavLink>
           <div className="relative group">
-            <Link to="#" className="hover:text-blue-400 transition-colors flex items-center font-medium">
-              More <ChevronRight className="h-4 w-4 ml-1" />
+            <Link to="#" className="hover:text-blue-400 text  transition-colors flex items-center font-medium">
+              More <ChevronDown className="text-[#3ABCFD] h-5 w-5 font-extrabold ml-1" />
             </Link>
           </div>
         </div>
@@ -274,20 +272,20 @@ export default function OriginMC() {
             <div className="w-full container mx-auto md:w-4/5 px-4 flex flex-col md:flex-row items-center justify-between">
               {/* Left Side - Made Clickable */}
               <div className="hidden lg:block mb-8 md:mb-0 text-center md:text-left cursor-pointer group" onClick={copyServerAddress}>
-                <div className="flex flex-col items-center md:items-start">
-                  <h2 className="text-xl md:text-2xl font-extrabold mb-2 group-hover:text-blue-400 transition-colors">Start your adventure today!</h2>
-                  <div className="flex items-center">
+                <div className="flex flex-col gap-1 items-center md:items-start">
+                  <div className="flex items-center ">
                     <p className="text-gray-400 text-sm mr-2">Join us on play.pvpingmc.net</p>
                     <Copy className="h-4 w-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
                   </div>
-                  <p className="text-sm text-green-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="hidden hover:block text-sm text-green-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     {copiedServer ? "Copied!" : "Click to copy"}
                   </p>
+                    <h2 className="text-xl md:text-xl font-extrabold mb-2 transition-colors">Start your adventure today!</h2>
                   <p className="text-blue-400 text-sm mt-2">
                     {isPlayerCountLoading ? (
                       <span className="inline-block animate-pulse">Loading players...</span>
                     ) : (
-                      <span>{playerCount} players online</span>
+                      <span>{playerCount} max players</span>
                     )}
                   </p>
                 </div>
@@ -308,14 +306,14 @@ export default function OriginMC() {
               {/* Right Side - Made Clickable */}
               <div className="hidden lg:block  text-center md:text-right cursor-pointer group" onClick={openDiscord}>
                 <div className="flex flex-col items-center md:items-end">
-                  <h2 className="text-xl md:text-2xl font-extrabold mb-2 group-hover:text-blue-400 transition-colors">Join our discord server!</h2>
                   <div className="flex items-center">
                     <p className="text-gray-400 text-sm mr-2">discord.gg/pvpingmc</p>
                     <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
                   </div>
-                  <p className="text-sm text-blue-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="hidden hover:block text-sm text-blue-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Click to open
                   </p>
+                    <h2 className="text-xl md:text-xl font-extrabold mb-2  transition-colors">Join our discord server!</h2>
                   <p className="text-blue-400 text-sm mt-2">
                     {isDiscordLoading ? (
                       <span className="inline-block animate-pulse">Loading members...</span>
@@ -331,10 +329,10 @@ export default function OriginMC() {
           {/* Video and Ready to Play Section - Only shown on home page */}
           {isHomePage && (
           <>
-          <div className="w-full container mx-auto md:w-4/5 px-4 py-8 md:py-16 grid md:grid-cols-2 gap-8">
+          <div className="w-full container mx-auto md:w-4/5 px-4 py-8 md:py-16 grid md:grid-cols-10 gap-8">
             {/* Video Section */}
-            <div className="relative rounded-xl overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-purple-900/30"></div>
+            <div className="col-span-4 relative rounded-xl overflow-hidden group  ">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-purple-900/30 " ></div>
               <img
                 src={Trailer}
                 alt="Gameplay Video"
@@ -350,7 +348,7 @@ export default function OriginMC() {
             </div>
 
             {/* Ready to Play Section - Adjusted to match Figma with less padding */}
-            <div className="relative flex items-center justify-center wrap rounded-xl bg-gradient-to-b from-[#131834] to-[#0D1117] p-6 shadow-xl ">
+            <div className=" col-span-6 relative flex items-center justify-center wrap rounded-3xl bg-gradient-to-b from-[#45A5FE14] to-[#20212D36] p-6 shadow-xl ">
               {/* Blue Crystal Decoration - Top Right */}
               <div className="absolute top-[-30px] right-[-30px] ">
               <img src={blue} alt=""

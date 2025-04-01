@@ -199,7 +199,7 @@ const Rules = () => {
       <div className="container mx-auto md:w-4/5 px-4 py-12">
         <div className="mb-16 flex items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center">
+            <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
               <FiBookOpen className="w-6 h-6" />
             </div>
             <div>
@@ -207,9 +207,7 @@ const Rules = () => {
               <div className="w-24 h-1 bg-blue-500 mt-1"></div>
             </div>
           </div>
-          <div className="w-8 h-8 ml-4">
-            <img src={arrow} alt="" />
-          </div>
+
         </div>
 
         <div className="bg-[#111827] rounded-xl p-6 mb-8 shadow-lg">
