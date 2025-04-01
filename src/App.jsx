@@ -50,7 +50,7 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={
-            <div className="w-full">
+            <div className="w-full" >
               <HeroSection />
               <div className="bg-[#13141d] mt-[-30px] w-full">
                 <Home />

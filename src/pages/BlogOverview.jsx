@@ -200,7 +200,7 @@ const BlogOverview = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Blog Posts</h1>
-              <div className="w-28 h-1 bg-blue-500 mt-1"></div>
+              <div className="w-5 h-1 bg-blue-500 mt-1"></div>
             </div>
           </div>
           

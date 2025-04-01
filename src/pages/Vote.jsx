@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FiExternalLink, FiCircle, FiHelpCircle, FiGift, FiClock, FiDollarSign, FiThumbsUp } from 'react-icons/fi';
-
+import pvpingmc from  "../assets/pvpingmc.png"
 
 const Vote = () => {
   const votingLinks = [
@@ -24,7 +24,7 @@ const Vote = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Server Voting</h1>
-              <div className="w-36 h-1 bg-blue-500 mt-1"></div>
+              <div className="w-6 h-1 bg-blue-500 mt-1"></div>
             </div>
           </div>
       
@@ -32,8 +32,39 @@ const Vote = () => {
 
         {/* Main vote button */}
         <div className="mb-12">
-          <button className="w-full bg-gradient-to-b from-[#45DFFE] to-[#4996F7] text-white text-xl font-bold py-5 rounded-lg  transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02]">
-            VOTE FOR Pv Ping MC TO EARN REWARDS
+          <button className="group w-full bg-gradient-to-b from-[#45DFFE] to-[#4996F7] text-white text-xl font-bold py-5 rounded-lg transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02] relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+              {/* Top left */}
+              <span className="absolute top-[10%] left-[5%] text-3xl font-black rotate-[-10deg] select-none opacity-70 text-white">
+                PvPingMC
+              </span>
+              
+              {/* Center */}
+              <span className="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-4xl font-black rotate-[5deg] select-none opacity-70 text-white">
+                PvPingMC
+              </span>
+              
+              {/* Between center and left */}
+              <span className="absolute top-[50%] left-[25%] transform -translate-y-1/2 text-2xl font-black rotate-[-15deg] select-none opacity-70 text-white">
+                PvPingMC
+              </span>
+              
+              {/* Bottom right */}
+              <span className="absolute bottom-[10%] right-[5%] text-3xl font-black rotate-[15deg] select-none opacity-70 text-white">
+                PvPingMC
+              </span>
+              
+              {/* Add logo image in the background */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <img 
+                  src={pvpingmc} 
+                  alt="" 
+                  className="opacity-8 w-32 object-contain mix-blend-soft-light"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+            <span className="relative z-10">VOTE FOR PvPingMC TO EARN REWARDS</span>
           </button>
         </div>
 
@@ -132,4 +163,3 @@ const Vote = () => {
 };
 
 export default Vote;
-

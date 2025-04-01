@@ -178,7 +178,7 @@ export default function OriginMC() {
           </div>
           <div>
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">Latest News</h2>
-            <div className="w-40 h-1 bg-blue-500 mt-2"></div>
+            <div className="w-7 h-1 bg-blue-500 mt-2"></div>
 
           </div>
         </div>
@@ -213,14 +213,16 @@ export default function OriginMC() {
       </div>
       {/* <JoinDiscord /> */}
       {/* Discord Community Section - Updated to match the image */}
-      <div className="w-full container mx-auto flex flex-row gap-8 px-4 md:w-4/5 py-8 md:py-16">
-        <div className="bg-[#13141d] border border-gray-800 rounded-3xl flex flex-col md:flex-row items-center justify-between relative  shadow-lg">
+      <div className="w-full container flex flex-row gap-8 mx-auto md:w-4/5 pt-8 pb-2 px-2 md:py-16">
+
+
+        <div className="bg-[#13141d] w-[60%] border border-gray-800 rounded-3xl flex flex-col md:flex-row items-center justify-between relative  shadow-lg">
           {/* Left Side - Minecraft Character */}
-          <div className="absolute left-[-10rem] z-10 p-6 md:p-8">
+          <div className="absolute left-[-9rem] z-10 p-6 md:p-8">
             <img
               src={pngtree}
               alt="Minecraft Character"
-              className="h-48 md:h-76 w-auto"
+              className="h-52 md:h-80 w-auto"
             />
           </div>
 
@@ -241,7 +243,7 @@ export default function OriginMC() {
                 href="http://pvpingmc.net/discord"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#5865F2] hover:bg-[#4752c4] transition-all duration-300 text-white font-medium py-2 px-6 rounded-md inline-block shadow-md hover:shadow-lg"
+                className="bg-[#7698FF] font-['Gilroy-ExtraBold']  transition-all duration-300 text-[#2D177D] text-2xl  font-extrabold py-2 px-12 border border-4 border-[#7698FF]  rounded-lg inline-block shadow-md hover:shadow-lg"
               >
                 Join discord!
               </a>
@@ -260,6 +262,7 @@ export default function OriginMC() {
             className="h-full w-full object-cover opacity-50 brightness-100 rounded-3xl"
           />
         </div>
+
       </div>
 
       {/* Play Now Section */}
