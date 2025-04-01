@@ -35,22 +35,22 @@ const Vote = () => {
           <button className="group w-full bg-gradient-to-b from-[#45DFFE] to-[#4996F7] text-white text-xl font-bold py-5 rounded-lg transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02] relative overflow-hidden">
             <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
               {/* Top left */}
-              <span className="absolute top-[10%] left-[5%] text-3xl font-black rotate-[-10deg] select-none opacity-70 text-white">
+              <span className="absolute top-[10%] left-[5%] text-3xl font-black rotate-[-10deg] select-none opacity-90 text-white">
                 PvPingMC
               </span>
               
               {/* Center */}
-              <span className="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-4xl font-black rotate-[5deg] select-none opacity-70 text-white">
+              <span className="absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 text-4xl font-black rotate-[5deg] select-none opacity-90 text-white">
                 PvPingMC
               </span>
               
               {/* Between center and left */}
-              <span className="absolute top-[50%] left-[25%] transform -translate-y-1/2 text-2xl font-black rotate-[-15deg] select-none opacity-70 text-white">
+              <span className="absolute top-[50%] left-[25%] transform -translate-y-1/2 text-2xl font-black rotate-[-15deg] select-none opacity-90 text-white">
                 PvPingMC
               </span>
               
               {/* Bottom right */}
-              <span className="absolute bottom-[10%] right-[5%] text-3xl font-black rotate-[15deg] select-none opacity-70 text-white">
+              <span className="absolute bottom-[10%] right-[5%] text-3xl font-black rotate-[15deg] select-none opacity-90 text-white">
                 PvPingMC
               </span>
               
