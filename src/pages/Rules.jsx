@@ -192,7 +192,7 @@ const Rules = () => {
     }
   ];
 
-  const introduction = "OriginMC rules have been created to ensure a positive experience for all players. Breaking any of the guidelines may lead to punishment depending on the severity of the violation. Each rule has a specific category and severity level indicated by colored tags. Punishment duration increases with repeated offenses.";
+  const introduction = "PvPingMc rules have been created to ensure a positive experience for all players. Breaking any of the guidelines may lead to punishment depending on the severity of the violation. Each rule has a specific category and severity level indicated by colored tags. Punishment duration increases with repeated offenses.";
 
   return (
     <div className="w-full bg-[#13141d] text-white min-h-screen">

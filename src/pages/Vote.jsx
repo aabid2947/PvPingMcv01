@@ -33,7 +33,7 @@ const Vote = () => {
         {/* Main vote button */}
         <div className="mb-12">
           <button className="w-full bg-gradient-to-b from-[#45DFFE] to-[#4996F7] text-white text-xl font-bold py-5 rounded-lg  transition-all duration-300 shadow-xl shadow-blue-700/20 transform hover:scale-[1.02]">
-            VOTE FOR ORIGIN MC TO EARN REWARDS
+            VOTE FOR Pv Ping MC TO EARN REWARDS
           </button>
         </div>
 
@@ -74,14 +74,14 @@ const Vote = () => {
             <div className="bg-[#151c2c] p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:translate-y-[-4px]">
               <h3 className="text-xl font-bold mb-3 flex items-center">
                 <FiHelpCircle className="mr-2 text-blue-400" />
-                Why vote for OriginMC?
+                Why vote for PvPingMc?
               </h3>
               <div className="bg-[#1a2337] p-4 rounded-lg shadow-inner">
                 <p className="text-gray-300 text-sm mb-4">
                   When you vote for our server, you're helping the community to continue to grow and for even more players to join. As a token of our gratitude for your contributions, we reward you with valuable in-game items and other benefits.
                 </p>
                 <p className="text-blue-400 text-sm font-medium">
-                  Make sure to vote on all six links every day to get more rank-ups and better rewards!
+                  Make sure to vote on all five links every day to get more rank-ups and better rewards!
                 </p>
               </div>
             </div>
@@ -90,7 +90,7 @@ const Vote = () => {
             <div className="bg-[#151c2c] p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:translate-y-[-4px]">
               <h3 className="text-xl font-bold mb-3 flex items-center">
                 <FiHelpCircle className="mr-2 text-blue-400" />
-                How to vote for OriginMC
+                How to vote for PvPingMc
               </h3>
               <div className="bg-[#1a2337] p-4 rounded-lg shadow-inner">
                 <p className="text-gray-300 text-sm">
