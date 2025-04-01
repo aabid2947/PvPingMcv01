@@ -5,6 +5,9 @@ import { initiateCheckout } from '../utils/tebexService';
 /**
  * Payment dialog component that integrates with Tebex.js to handle checkout
  */
+// Use a constant with fallback for the store ID
+const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
+
 function PaymentDialog({ 
   isOpen, 
   onClose, 
@@ -63,9 +66,8 @@ function PaymentDialog({
         await new Promise(resolve => setTimeout(resolve, 500));
         setCheckoutStage('preparing');
         
-        // Get the Tebex store ID from environment variable
-        const storeId = import.meta.env.VITE_TEBEX_STORE_ID;
-        if (!storeId) {
+        console.log('Using Tebex store ID:', STORE_ID);
+        if (!STORE_ID) {
           throw new Error('Tebex store ID is missing. Please configure your environment variables.');
         }
         

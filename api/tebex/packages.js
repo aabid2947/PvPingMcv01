@@ -12,6 +12,9 @@ let packagesCache = {
   expiryTime: 5 * 60 * 1000 // Cache for 5 minutes
 };
 
+// Default store ID if environment variable is missing
+const DEFAULT_STORE_ID = '752140';
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,8 +34,10 @@ export default async function handler(req, res) {
   try {
     // Get API key from environment variables
     const TEBEX_API_KEY = process.env.TEBEX_API_KEY;
-    const TEBEX_STORE_ID = process.env.VITE_TEBEX_STORE_ID || '752140';
+    const TEBEX_STORE_ID = process.env.VITE_TEBEX_STORE_ID || DEFAULT_STORE_ID;
     const TEBEX_PACKAGE_IDS = process.env.VITE_TEBEX_PACKAGE_IDS || '';
+
+    console.log('Using Tebex store ID:', TEBEX_STORE_ID);
 
     // Check if we have API key
     if (!TEBEX_API_KEY) {

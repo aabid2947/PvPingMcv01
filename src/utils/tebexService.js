@@ -5,6 +5,9 @@
 // Check if we're in development mode
 const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
 
+// Make sure we can access the store ID
+const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID || '752140'; // Fallback to hardcoded ID if env var not available
+
 // In-memory cache for package data
 let packageCache = {
   data: null,
@@ -26,25 +29,25 @@ export const initializeTebex = async () => {
     }
 
     // For production, try to get the store ID and initialize
-    const storeId = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
-    
-    if (!storeId) {
-      console.error('Tebex store ID is missing');
+    if (!STORE_ID) {
+      console.error('Tebex store ID is missing. Please check your environment variables.');
       // Still initialize with mock to allow the site to function
       window.Tebex = window.Tebex || createMockTebexInstance();
       window.tebex = window.Tebex;
       return false;
     }
 
+    console.log('Using Tebex store ID:', STORE_ID);
+
     // Check if Tebex object exists
     if (window.Tebex) {
       try {
         // Initialize with store ID
         window.Tebex.init({
-          storeId: storeId,
+          storeId: STORE_ID,
           theme: 'dark'
         });
-        console.log('Tebex SDK initialized successfully with store ID:', storeId);
+        console.log('Tebex SDK initialized successfully with store ID:', STORE_ID);
         return true;
       } catch (initError) {
         console.error('Failed to initialize Tebex SDK:', initError);
