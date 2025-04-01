@@ -127,10 +127,196 @@ function parseFrontmatter(text) {
 // Each post is complete with full content so we don't need to fetch files in production
 const completePostData = [
   {
+    id: '2024-05-01-summer-event',
+    title: 'Summer Event 2024 - Sun, Fun, and Minecraft!',
+    date: '2024-05-01',
+    thumbnail: 'https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_1280.jpg',
+    tags: ['event', 'summer', 'news'],
+    excerpt: 'Get ready for the biggest summer event of 2024! Join us for special challenges, prizes, and summer-themed builds.',
+    content: `# Summer Event 2024: Sun, Fun, and Minecraft!
+
+Are you ready for the hottest Minecraft event of the year? Our Summer Event 2024 is just around the corner, and it's going to be epic!
+
+## Event Duration
+
+The event will run from **June 1st** to **August 31st, 2024**.
+
+## What to Expect
+
+- **Summer Challenges**: Complete daily and weekly challenges for exclusive rewards
+- **Beach Party Build Competition**: Show off your building skills with a summer theme
+- **Special Mobs**: Hunt down special summer-themed mobs for rare drops
+- **Limited-Time Recipes**: Craft unique summer items available only during the event
+
+## Rewards
+
+- Summer 2024 Exclusive Title
+- Beach-themed armor set
+- Special particle effects
+- Custom weapon enchantments
+- Unique pets
+
+Don't miss out on this amazing event! Mark your calendars and prepare for the ultimate summer Minecraft experience.`,
+    contentHtml: parseMarkdown(`# Summer Event 2024: Sun, Fun, and Minecraft!
+
+Are you ready for the hottest Minecraft event of the year? Our Summer Event 2024 is just around the corner, and it's going to be epic!
+
+## Event Duration
+
+The event will run from **June 1st** to **August 31st, 2024**.
+
+## What to Expect
+
+- **Summer Challenges**: Complete daily and weekly challenges for exclusive rewards
+- **Beach Party Build Competition**: Show off your building skills with a summer theme
+- **Special Mobs**: Hunt down special summer-themed mobs for rare drops
+- **Limited-Time Recipes**: Craft unique summer items available only during the event
+
+## Rewards
+
+- Summer 2024 Exclusive Title
+- Beach-themed armor set
+- Special particle effects
+- Custom weapon enchantments
+- Unique pets
+
+Don't miss out on this amazing event! Mark your calendars and prepare for the ultimate summer Minecraft experience.`)
+  },
+  {
+    id: '2024-04-25-faction-wars',
+    title: 'Faction Wars: The Battle for Dominance Begins!',
+    date: '2024-04-25',
+    thumbnail: 'https://cdn.pixabay.com/photo/2016/11/29/05/45/astronomy-1867616_1280.jpg',
+    tags: ['factions', 'pvp', 'event'],
+    excerpt: 'Join the ultimate faction competition with massive prizes and glory!',
+    content: `# Faction Wars: The Battle for Dominance Begins!
+
+Calling all faction leaders and members! It's time for the most anticipated event of the year - Faction Wars!
+
+## Event Details
+
+The battle runs for **4 weeks** starting on **May 1st**. Each week will focus on a different aspect of faction gameplay:
+
+- **Week 1**: Territory Control
+- **Week 2**: Resource Gathering
+- **Week 3**: Raid Defense
+- **Week 4**: Final Battle
+
+## How to Participate
+
+1. Ensure your faction has at least 5 active members
+2. Register your faction at spawn with the NPC "War Commander"
+3. Complete the qualification challenge to enter the tournament
+
+## Prizes
+
+- 1st Place: 1 month of Supreme rank for all members, 5,000,000 in-game currency, and exclusive faction tag
+- 2nd Place: 2 weeks of Elite rank for all members, 2,500,000 in-game currency
+- 3rd Place: 1 week of VIP rank for all members, 1,000,000 in-game currency
+
+All participating factions will receive a commemorative trophy for their faction base.
+
+May the best faction win!`,
+    contentHtml: parseMarkdown(`# Faction Wars: The Battle for Dominance Begins!
+
+Calling all faction leaders and members! It's time for the most anticipated event of the year - Faction Wars!
+
+## Event Details
+
+The battle runs for **4 weeks** starting on **May 1st**. Each week will focus on a different aspect of faction gameplay:
+
+- **Week 1**: Territory Control
+- **Week 2**: Resource Gathering
+- **Week 3**: Raid Defense
+- **Week 4**: Final Battle
+
+## How to Participate
+
+1. Ensure your faction has at least 5 active members
+2. Register your faction at spawn with the NPC "War Commander"
+3. Complete the qualification challenge to enter the tournament
+
+## Prizes
+
+- 1st Place: 1 month of Supreme rank for all members, 5,000,000 in-game currency, and exclusive faction tag
+- 2nd Place: 2 weeks of Elite rank for all members, 2,500,000 in-game currency
+- 3rd Place: 1 week of VIP rank for all members, 1,000,000 in-game currency
+
+All participating factions will receive a commemorative trophy for their faction base.
+
+May the best faction win!`)
+  },
+  {
+    id: '2024-04-15-server-update',
+    title: 'Major Server Update: New Features and Improvements',
+    date: '2024-04-15',
+    thumbnail: 'https://cdn.pixabay.com/photo/2015/12/04/14/05/code-1076536_1280.jpg',
+    tags: ['news', 'update', 'features'],
+    excerpt: 'Check out all the amazing new features in our latest server update!',
+    content: `# Major Server Update: New Features and Improvements
+
+We're excited to announce a major update to our Minecraft server! This update includes numerous new features, performance improvements, and bug fixes.
+
+## New Features
+
+- **Custom Enchantments**: 15 new unique enchantments exclusive to our server
+- **Economy Overhaul**: New shops, trading system, and balance adjustments
+- **Quest System**: Progressive quests with rewards for all game modes
+- **New Biomes**: 3 custom biomes added to the survival world
+- **Parkour Challenges**: New parkour course with tiered difficulty levels
+
+## Performance Improvements
+
+- Server optimization reducing lag by up to 40%
+- Chunk loading improvements for smoother gameplay
+- Entity processing optimizations
+- Better TPS stability during high player counts
+
+## Bug Fixes
+
+- Fixed duplication glitch in certain chest types
+- Resolved teleportation issues in the End dimension
+- Fixed inconsistent damage calculations in PvP
+- Corrected item description errors in custom items
+
+The update is now live! Just log in to experience all these amazing improvements. We recommend creating a new profile to take full advantage of all the new features.
+
+Let us know what you think about the update on our Discord server!`,
+    contentHtml: parseMarkdown(`# Major Server Update: New Features and Improvements
+
+We're excited to announce a major update to our Minecraft server! This update includes numerous new features, performance improvements, and bug fixes.
+
+## New Features
+
+- **Custom Enchantments**: 15 new unique enchantments exclusive to our server
+- **Economy Overhaul**: New shops, trading system, and balance adjustments
+- **Quest System**: Progressive quests with rewards for all game modes
+- **New Biomes**: 3 custom biomes added to the survival world
+- **Parkour Challenges**: New parkour course with tiered difficulty levels
+
+## Performance Improvements
+
+- Server optimization reducing lag by up to 40%
+- Chunk loading improvements for smoother gameplay
+- Entity processing optimizations
+- Better TPS stability during high player counts
+
+## Bug Fixes
+
+- Fixed duplication glitch in certain chest types
+- Resolved teleportation issues in the End dimension
+- Fixed inconsistent damage calculations in PvP
+- Corrected item description errors in custom items
+
+The update is now live! Just log in to experience all these amazing improvements. We recommend creating a new profile to take full advantage of all the new features.
+
+Let us know what you think about the update on our Discord server!`)
+  },
+  {
     id: '2024-04-06-skyblock-guide',
     title: 'Ultimate Beginner\'s Guide to Skyblock',
     date: '2024-04-06',
-    thumbnail: 'https://raw.githubusercontent.com/PvPingMc/blog-images/main/skyblock.jpg',
+    thumbnail: 'https://cdn.pixabay.com/photo/2016/11/19/14/00/code-1839406_1280.jpg',
     tags: ['guide', 'skyblock', 'tutorial'],
     excerpt: 'Everything new players need to know about playing Skyblock on our server.',
     content: `# Ultimate Beginner's Guide to Skyblock
@@ -717,6 +903,13 @@ const knownBlogFiles = [
  */
 export async function getAllPosts() {
   console.log('Fetching all posts...');
+  
+  // Always return the embedded data first for consistency
+  // This ensures the blog works in all environments including Cloudflare
+  console.log('Using embedded post data for consistent experience');
+  return completePostData;
+  
+  /* Commenting out file-based loading to avoid 404 errors in production
   let posts = [];
 
   // Check if we're running in a deployment environment like Cloudflare
@@ -798,6 +991,7 @@ export async function getAllPosts() {
   
   // Sort by date (newest first)
   return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  */
 }
 
 /**
@@ -807,25 +1001,18 @@ export async function getAllPosts() {
  */
 export async function getPostById(id) {
   try {
-    // First check if we have this post in the completePostData array
-    const embeddedPost = completePostData.find(post => post.id === id);
-    if (embeddedPost) {
-      return embeddedPost;
-    }
-    
-    // If not found in embedded data, try fetching all posts
-    const allPosts = await getAllPosts();
-    const post = allPosts.find(post => post.id === id);
+    // Return directly from the completePostData array
+    const post = completePostData.find(post => post.id === id);
     
     if (!post) {
       console.error(`Post with ID ${id} not found`);
+      return null;
     }
     
     return post;
   } catch (error) {
     console.error(`Error getting post with ID ${id}:`, error);
-    // Try to find the post in embedded data as fallback
-    return completePostData.find(post => post.id === id) || null;
+    return null;
   }
 }
 
@@ -834,13 +1021,7 @@ export async function getPostById(id) {
  * @returns {Promise<Array>} Array of post IDs
  */
 export async function getAllPostIds() {
-  try {
-    const posts = await getAllPosts();
-    return posts.map(post => post.id);
-  } catch (error) {
-    console.error('Error getting all post IDs:', error);
-    return completePostData.map(post => post.id);
-  }
+  return completePostData.map(post => post.id);
 }
 
 /**
@@ -849,11 +1030,5 @@ export async function getAllPostIds() {
  * @returns {Promise<Array>} Array of posts with the specified tag
  */
 export async function getPostsByTag(tag) {
-  try {
-    const allPosts = await getAllPosts();
-    return allPosts.filter(post => post.tags && post.tags.includes(tag));
-  } catch (error) {
-    console.error(`Error getting posts with tag ${tag}:`, error);
-    return completePostData.filter(post => post.tags && post.tags.includes(tag));
-  }
+  return completePostData.filter(post => post.tags && post.tags.includes(tag));
 }
