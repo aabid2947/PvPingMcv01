@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
     
-    // Check if this is a static asset request
+    // Check if this is an asset request
     if (
       pathname.startsWith('/assets/') ||
       pathname.startsWith('/images/') ||
@@ -18,20 +18,8 @@ export default {
       return fetch(request);
     }
     
-    // Specifically handle content/blog/* requests to avoid 404s
-    if (pathname.startsWith('/content/blog/')) {
-      // Instead of returning 404, redirect to the blog page
-      // This prevents 404 errors in console for missing markdown files
-      return new Response(null, {
-        status: 302,
-        headers: {
-          'Location': '/blog',
-          'Cache-Control': 'no-cache'
-        }
-      });
-    }
-    
-    // For known SPA routes, serve the index.html file
+    // For all other paths, we'll serve the index.html file
+    // If the path is one of our SPA routes
     if (
       pathname === '/blog' ||
       pathname.startsWith('/blog/') ||

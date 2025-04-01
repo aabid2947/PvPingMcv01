@@ -24,7 +24,7 @@ const FooterComponent = () => {
           <div className="mb-6 md:mb-0 text-center md:text-left">
             <div className="flex flex-wrap items-center justify-center md:justify-start mb-2">
               <span className="text-white font-medium mr-1">Copyright ©</span>
-              <span className="text-blue-500 font-medium mr-1">PvPingMc</span>
+              <span className="text-blue-500 font-medium mr-1">OriginMC</span>
               <span className="text-white font-medium">2023. All Rights Reserved.</span>
             </div>
             <p className="text-gray-500 text-xs">

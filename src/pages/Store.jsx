@@ -436,7 +436,7 @@ export default function Store() {
               </span>
         </button>
           )}
-        </div>
+      </div>
     </div>
   );
 };

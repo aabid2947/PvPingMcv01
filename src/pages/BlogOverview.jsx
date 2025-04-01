@@ -9,53 +9,35 @@ import { getAllPosts } from '../utils/markdown';
 const BlogCard = ({ post }) => {
   // Function to get tag colors
   const getTagColor = (tag) => {
-    switch (tag.toLowerCase()) {
-      case 'news': return 'bg-green-600';
-      case 'welcome': return 'bg-blue-600';
-      case 'server': return 'bg-purple-600';
-      case 'update': return 'bg-red-600';
-      case 'features': return 'bg-yellow-600';
-      case 'event': return 'bg-orange-600';
-      case 'seasonal': return 'bg-teal-600';
-      case 'announcement': return 'bg-indigo-600';
-      case 'factions': return 'bg-pink-600';
-      case 'changelog': return 'bg-cyan-600';
-      case 'pvp': return 'bg-rose-600';
-      case 'tournament': return 'bg-lime-600';
-      case 'patch': return 'bg-amber-600';
-      case 'economy': return 'bg-emerald-600';
-      case 'raid': return 'bg-red-700';
-      case 'survival': return 'bg-green-700';
-      case 'hardcore': return 'bg-gray-800';
-      case 'summer': return 'bg-sky-600';
-      case 'modpack': return 'bg-fuchsia-600';
-      case 'vanilla': return 'bg-stone-600';
-      case 'creative': return 'bg-purple-500';
-      case 'skyblock': return 'bg-blue-700';
-      case 'guide': return 'bg-violet-700';
-      case 'leaderboard': return 'bg-gray-500';
-      case 'clans': return 'bg-rose-500';
-      case 'battlepass': return 'bg-yellow-700';
-      case 'quests': return 'bg-cyan-700';
-      case 'map': return 'bg-red-800';
-      case 'skins': return 'bg-green-500';
-      case 'mods': return 'bg-blue-500';
-      case 'weapons': return 'bg-orange-700';
-      case 'tutorial': return 'bg-amber-500';
-      case 'parkour': return 'bg-pink-500';
-      case 'leaderboard': return 'bg-gray-500';
-      case 'speedrun': return 'bg-blue-800';
-      case 'admin': return 'bg-purple-800';
-      case 'battle': return 'bg-red-500';
-      case 'rpg': return 'bg-teal-700';
-      case 'celebration': return 'bg-green-800';
-      case 'build': return 'bg-yellow-500';
-      case 'trade': return 'bg-lime-500';
-      case 'enchantments': return 'bg-indigo-700';
-      case 'beginners': return 'bg-orange-900';
-      case 'endgame': return 'bg-fuchsia-700';
-      case 'farming': return 'bg-green-900';
-      default: return 'bg-gray-600';
+    switch (tag) {
+      case 'news':
+        return 'bg-green-600';
+      case 'welcome':
+        return 'bg-blue-600';
+      case 'server':
+        return 'bg-purple-600';
+      case 'update':
+        return 'bg-red-600';
+      case 'features':
+        return 'bg-yellow-600';
+      case 'announcement':
+        return 'bg-orange-600';
+      case 'changelog':
+        return 'bg-indigo-600';
+      case 'event':
+        return 'bg-pink-600';
+      case 'seasonal':
+        return 'bg-teal-600';
+      case 'guide':
+        return 'bg-cyan-600';
+      case 'tutorial':
+        return 'bg-emerald-600';
+      case 'admin':
+        return 'bg-violet-600';
+      case 'maintenance':
+        return 'bg-amber-600';
+      default:
+        return 'bg-gray-600';
     }
   };
 
