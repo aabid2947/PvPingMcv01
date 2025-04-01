@@ -1,4 +1,7 @@
-import { Routes, Route } from 'react-router-dom'
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+import { StoreProvider } from './pages/Store';
 import './index.css'
 import Home from './pages/Home'
 import BlogOverview from './pages/BlogOverview'
@@ -9,12 +12,11 @@ import Rules from './pages/Rules'
 import PvPingMC from './pages/PvPingMC'
 import HeroSection from "./pages/HeroSection.jsx"
 import OriginPass from './pages/OriginPass'
-import { Link, useLocation } from 'react-router-dom'
 import pvping from "./assets/thumb_logo.png"
-import { StoreProvider } from './context/StoreContext'
+import NotFound from './pages/NotFound'
 
 // Universal Footer Component
-const Footer = () => {
+const FooterComponent = () => {
   return (
     <footer className="bg-[#0a0b11] border-t border-gray-800/30 py-8 w-full">
       <div className="w-full container mx-auto md:w-4/5 px-4">
@@ -39,85 +41,96 @@ const Footer = () => {
   );
 };
 
-function App() {
+function AppContent() {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
   return (
-    <StoreProvider>
-      <div className="w-full min-h-screen bg-cover bg-center bg-[url('../assets/client-bg.png')] mt-[-30px]">
-        <main className='mt-6 w-full overflow-x-hidden'>
-          <Routes>
-            <Route path="/" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <Home />
-                </div>
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <Home />
               </div>
-            } />
-            <Route path="/blog" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <BlogOverview />
-                </div>
+            </div>
+          } />
+          <Route path="/blog" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <BlogOverview />
               </div>
-            } />
-            <Route path="/blog/:id" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <BlogDetail />
-                </div>
+            </div>
+          } />
+          <Route path="/blog/:id" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <BlogDetail />
               </div>
-            } />
-            <Route path="/store" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <Store />
-                </div>
+            </div>
+          } />
+          <Route path="/store" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <Store />
               </div>
-            } />
-            <Route path="/vote" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <Vote />
-                </div>
+            </div>
+          } />
+          <Route path="/vote" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <Vote />
               </div>
-            } />
-            <Route path="/rules" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <Rules />
-                </div>
+            </div>
+          } />
+          <Route path="/rules" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <Rules />
               </div>
-            } />
-            <Route path="/pvpingmc" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <PvPingMC />
-                </div>
+            </div>
+          } />
+          <Route path="/pvpingmc" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <PvPingMC />
               </div>
-            } />
-            <Route path="/originpass" element={
-              <div className="w-full">
-                <HeroSection />
-                <div className="bg-[#13141d] mt-[-30px] w-full">
-                  <OriginPass />
-                </div>
+            </div>
+          } />
+          <Route path="/originpass" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <OriginPass />
               </div>
-            } />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </StoreProvider>
-  )
+            </div>
+          } />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      <FooterComponent />
+    </div>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <HelmetProvider>
+      <StoreProvider>
+        
+          <AppContent />
+      
+      </StoreProvider>
+    </HelmetProvider>
+  );
+}
+
+export default App;

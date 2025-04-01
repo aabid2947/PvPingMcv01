@@ -259,3 +259,66 @@ body {
     --ring: 224.3 76.3% 48%;
   }
 }
+
+/* Modal and Dialog styling */
+.modal-open,
+.payment-dialog-open {
+  overflow: hidden;
+}
+
+.loader {
+  border: 3px solid rgba(156, 163, 175, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid #8b5cf6;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(10%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.3s ease-out forwards;
+}
+
+/* Purchase Modal Specific Styles */
+.purchase-modal-open .backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+}
+
+/* Checkout Container Styles */
+.checkout-container {
+  min-height: 300px;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Override Tebex iframe styles to ensure it fits properly */
+.checkout-container iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px;
+}
+
+/* Ensure the highest z-index for modals */
+.fixed.z-50 {
+  z-index: 9999;
+}
