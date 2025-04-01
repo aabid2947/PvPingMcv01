@@ -142,7 +142,7 @@ export default function OriginMC() {
   const mobileInactiveClass = "hover:text-blue-400 transition-all duration-300 py-2 text-left font-medium w-full block";
 
   return (
-    <div className={`${isHomePage ? 'min-h-screen' : 'min-h-[80px] md:min-h-[120px]'} bg-[#13141d] text-white mt-6 w-full`}
+    <div className={`${isHomePage ? 'min-h-screen' : 'min-h-[80px] md:min-h-[120px]'} bg-[#13141d] text-white mt-6 w-full mt-[-0px]`}
          style={{ backgroundImage: `url(${heroSectionBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {/* Navigation */}
       <nav className={`w-full container mx-auto md:w-4/5 px-4  px-4 flex items-center justify-between relative`}>
@@ -294,13 +294,13 @@ export default function OriginMC() {
               </div>
 
               {/* Center Logo */}
-              <div className="z-10 w-64 h-64 md:w-80 md:h-80 block mx-auto my-4 md:my-0">
+              <div className="z-10 block mx-auto my-4 md:my-0">
                 <div className="relative">
                   <div className="absolute inset-0 blur-xl bg-gradient-to-r from-[#00ff85] to-[#00a1ff] opacity-30 rounded-full"></div>
                   <img
                     src={pvping}
                     alt="Origin MC Logo"
-                    className="relative z-10 h-64 w-64 md:h-64 md:w-80 mx-auto"
+                    className="relative z-10 h-72 w-84  mx-auto"
                   />
                 </div>
               </div>

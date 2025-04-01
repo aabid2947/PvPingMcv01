@@ -1,144 +1,137 @@
 import React, { useState } from 'react';
-import { FiShoppingCart, FiCheck } from 'react-icons/fi';
+import { FiShoppingCart, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import LoginModal from './LoginModal';
 import PaymentDialog from './PaymentDialog';
+import { useStore } from '../pages/Store';
 
 /**
- * Button component that handles the purchase flow for Minecraft packages
+ * Button component for purchasing packages
  */
 function PurchaseButton({ packageDetails }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const [username, setUsername] = useState('');
+  const [edition, setEdition] = useState('java');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Get store context to check if Tebex is loaded and if there's an error
+  const { tebexLoaded, error: storeError } = useStore();
 
-  // Handle the initial purchase button click
   const handlePurchaseClick = () => {
-    setError(null);
+    // Check if there's a store error indicating payment system is unavailable
+    if (storeError && storeError.includes('Payment system')) {
+      setError('Payment system is not available at this time. Please try again later.');
+      return;
+    }
     
-    // Check if we already have the username (e.g. from localStorage)
+    // Check if user is already logged in (stored in localStorage)
     const savedUsername = localStorage.getItem('minecraft_username');
-    const savedEdition = localStorage.getItem('minecraft_edition') || 'java';
+    const savedEdition = localStorage.getItem('minecraft_edition');
     
-    if (savedUsername) {
-      // If we already have a username, go straight to payment
-      setUserInfo({
-        username: savedUsername,
-        edition: savedEdition
-      });
+    if (savedUsername && savedEdition) {
+      setUsername(savedUsername);
+      setEdition(savedEdition);
       setShowPaymentDialog(true);
     } else {
-      // Otherwise show the login modal first
       setShowLoginModal(true);
     }
   };
-
-  // Handle login modal success (user entered a username)
-  const handleLoginSuccess = ({ username, edition }) => {
-    // Save the username in localStorage for future purchases
+  
+  const handleLoginSuccess = (username, edition) => {
+    setUsername(username);
+    setEdition(edition);
+    setShowLoginModal(false);
+    
+    // Save the username and edition to localStorage
     localStorage.setItem('minecraft_username', username);
     localStorage.setItem('minecraft_edition', edition);
     
-    // Set the user info for the payment dialog
-    setUserInfo({
-      username,
-      edition
-    });
-    
-    // Close login modal and open payment dialog
-    setShowLoginModal(false);
+    // Open payment dialog
     setShowPaymentDialog(true);
   };
-
-  // Handle payment successful completion
-  const handlePaymentSuccess = (purchaseDetails) => {
-    console.log('Purchase successful:', purchaseDetails);
-    
-    // Update UI to show purchase was successful
+  
+  const handlePaymentSuccess = () => {
     setPurchaseSuccess(true);
-    
-    // Record the purchase in localStorage
-    const purchases = JSON.parse(localStorage.getItem('minecraft_purchases') || '[]');
-    purchases.push(purchaseDetails);
-    localStorage.setItem('minecraft_purchases', JSON.stringify(purchases));
-    
-    // Reset UI after a delay
-    setTimeout(() => {
-      setShowPaymentDialog(false);
-    }, 3000);
-  };
-
-  // Handle payment errors
-  const handlePaymentError = (err) => {
-    console.error('Payment error:', err);
-    setError('There was an error processing your payment. Please try again.');
-    setLoading(false);
-  };
-
-  // Close the payment dialog
-  const handleClosePaymentDialog = () => {
     setShowPaymentDialog(false);
+    
+    // Save purchase information to localStorage for future reference
+    const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+    purchases.push({
+      packageId: packageDetails.id,
+      packageName: packageDetails.name,
+      username,
+      edition,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('purchases', JSON.stringify(purchases));
+  };
+  
+  const handlePaymentError = (error) => {
+    console.error('Payment error:', error);
+    setError('There was an issue processing your payment. Please try again.');
   };
 
   return (
-    <>
+    <div>
+      {error && (
+        <div className="text-red-500 text-sm mb-2 flex items-center">
+          <FiAlertCircle className="mr-1" />
+          {error}
+        </div>
+      )}
+      
       <button
         onClick={handlePurchaseClick}
-        disabled={loading || !packageDetails}
-        className={`flex items-center justify-center px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ${
-          purchaseSuccess
-            ? 'bg-green-600 hover:bg-green-700 text-white' 
+        disabled={loading || !tebexLoaded}
+        className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors ${
+          purchaseSuccess 
+            ? 'bg-green-500 hover:bg-green-600 text-white' 
             : 'bg-purple-600 hover:bg-purple-700 text-white'
-        } ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+        } ${(!tebexLoaded || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {loading ? (
-          <span className="flex items-center">
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+          <>
+            <div className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             Processing...
-          </span>
+          </>
         ) : purchaseSuccess ? (
-          <span className="flex items-center">
-            <FiCheck className="mr-1" />
+          <>
+            <FiCheck className="mr-2" />
             Purchased
-          </span>
+          </>
         ) : (
-          <span className="flex items-center">
-            <FiShoppingCart className="mr-1" />
+          <>
+            <FiShoppingCart className="mr-2" />
             Purchase Now
-          </span>
+          </>
         )}
       </button>
-
-      {/* Error message if payment fails */}
-      {error && (
-        <p className="text-red-500 text-sm mt-2">{error}</p>
+      
+      {storeError && !error && storeError.includes('preview only') && (
+        <div className="text-yellow-500 text-sm mt-2 flex items-center">
+          <FiAlertCircle className="mr-1" />
+          Payment system is in preview mode only
+        </div>
       )}
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
+      
+      <LoginModal 
+        show={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLoginSuccess={handleLoginSuccess}
       />
-
-      {/* Payment Dialog */}
-      {showPaymentDialog && userInfo && (
-        <PaymentDialog
-          isOpen={showPaymentDialog}
-          onClose={handleClosePaymentDialog}
-          packageDetails={packageDetails}
-          username={userInfo.username}
-          edition={userInfo.edition}
-          onPaymentSuccess={handlePaymentSuccess}
-          onPaymentError={handlePaymentError}
-        />
-      )}
-    </>
+      
+      <PaymentDialog
+        isOpen={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        packageDetails={packageDetails}
+        username={username}
+        edition={edition}
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentError={handlePaymentError}
+      />
+    </div>
   );
 }
 

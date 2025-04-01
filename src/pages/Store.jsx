@@ -35,28 +35,44 @@ export function StoreProvider({ children }) {
           console.log('Tebex SDK loaded successfully');
           // Initialize Tebex with your store ID
           if (window.Tebex) {
-            window.Tebex.init({
-              storeId: 'your-store-id', // Replace with your actual store ID
-              theme: 'dark'
-            });
-            setTebexLoaded(true);
+            try {
+              // Your store ID from Tebex (can be set in .env file)
+              const storeId = import.meta.env.VITE_TEBEX_STORE_ID || 'your-store-id';
+              
+              if (storeId === 'your-store-id') {
+                console.warn('Tebex store ID not configured. Payment system will be disabled.');
+                setError('Payment system not configured. Products are displayed for preview only.');
+                setTebexLoaded(true); // Still load products even if payment system isn't configured
+                return;
+              }
+              
+              window.Tebex.init({
+                storeId: storeId,
+                theme: 'dark'
+              });
+              setTebexLoaded(true);
+            } catch (configError) {
+              console.error('Failed to initialize Tebex SDK:', configError);
+              setError('Payment system not properly configured. Products are displayed for preview only.');
+              setTebexLoaded(true); // Still load products even if payment system isn't configured
+            }
           } else {
-            throw new Error('Tebex SDK not properly loaded');
+            console.error('Tebex SDK not properly loaded');
+            setError('Payment system unavailable. Products are displayed for preview only.');
+            setTebexLoaded(true); // Still load products even if SDK isn't working
           }
         };
         script.onerror = (error) => {
           console.error('Failed to load Tebex SDK:', error);
-          setError('Failed to load payment system. Please try again later.');
+          setError('Payment system unavailable. Products are displayed for preview only.');
+          setTebexLoaded(true); // Still load products even if SDK fails to load
         };
         document.body.appendChild(script);
       } catch (error) {
         console.error('Failed to load Tebex SDK:', error);
-        // In development mode, we'll still set tebexLoaded to true
-        if (import.meta.env.DEV) {
-          setTebexLoaded(true);
-        } else {
-          setError('Failed to load payment system. Please try again later.');
-        }
+        // Set tebexLoaded to true regardless of errors to ensure products still load
+        setTebexLoaded(true);
+        setError('Payment system unavailable. Products are displayed for preview only.');
       }
     };
 
