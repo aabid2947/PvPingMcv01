@@ -12,31 +12,43 @@
   "routes": [
     {
       "src": "/content/blog/.*",
-      "dest": "/blog"
+      "dest": "/blog",
+      "status": 302
+    },
+    {
+      "src": "/images/uploads/.*",
+      "dest": "/blog",
+      "status": 302
     },
     {
       "src": "/blog",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/blog/:slug",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/store",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/about",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/contact",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "status": 200
     }
   ]
 } 
