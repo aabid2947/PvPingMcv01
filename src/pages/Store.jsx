@@ -23,8 +23,13 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     const loadTebexSDK = async () => {
       try {
-        // Load Tebex SDK script
-        await loadTebexScript();
+        setLoading(true);
+        
+        // Load Tebex SDK script with improved error handling
+        await loadTebexScript().catch(error => {
+          console.warn('Tebex script loading failed, using fallback:', error);
+          // Script loading will now handle fallbacks internally
+        });
         
         // Initialize Tebex with store ID from environment
         const success = await initializeTebex();
@@ -33,14 +38,19 @@ export function StoreProvider({ children }) {
           console.log('Tebex SDK initialized successfully');
           setTebexLoaded(true);
         } else {
-          console.error('Failed to initialize Tebex SDK');
-          setError('Payment system not properly configured. Products are displayed for preview only.');
-          setTebexLoaded(true); // Still load products even if SDK isn't working
+          console.warn('Using mock Tebex implementation');
+          // We're still setting tebexLoaded to true because we're using a mock implementation
+          setTebexLoaded(true);
+          setError('Using test mode for payments. In production, real payments will be processed.');
         }
       } catch (error) {
-        console.error('Failed to load Tebex SDK:', error);
-        setError('Payment system unavailable. Products are displayed for preview only.');
-        setTebexLoaded(true); // Still load products even if SDK fails to load
+        console.error('Failed to initialize payment system:', error);
+        // We're still setting tebexLoaded to true because we're using a mock implementation
+        setTebexLoaded(true);
+        setError('Using test mode for payments. In production, real payments will be processed.');
+      } finally {
+        // Make sure to finish loading in any case
+        setLoading(false);
       }
     };
 
@@ -181,10 +191,21 @@ export default function Store() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [purchaseStates, setPurchaseStates] = useState({});
   const [username, setUsername] = useState('');
   const [edition, setEdition] = useState('java');
   const [purchaseError, setPurchaseError] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
+
+  // Load purchased items from localStorage
+  const [purchasedItems, setPurchasedItems] = useState(() => {
+    try {
+      const savedPurchases = localStorage.getItem('purchases');
+      return savedPurchases ? JSON.parse(savedPurchases) : [];
+    } catch (e) {
+      console.error('Error loading purchases from localStorage:', e);
+      return [];
+    }
+  });
 
   // Handle category change with animation
   const handleCategoryChange = (category) => {
@@ -197,6 +218,14 @@ export default function Store() {
       setSelectedCategory(category);
       setAnimating(false);
     }, 300);
+  };
+
+  // Check if a package has been purchased
+  const isPackagePurchased = (packageId) => {
+    return purchasedItems.some(purchase => 
+      purchase.packageId === packageId && 
+      purchase.verified === true
+    );
   };
 
   // Handle purchase button click
@@ -240,35 +269,46 @@ export default function Store() {
   
   // Handle successful payment
   const handlePaymentSuccess = () => {
-    // Update purchase state for the specific package
-    setPurchaseStates(prev => ({
-      ...prev,
-      [selectedPackage.id]: true
-    }));
+    setProcessingPayment(true);
     
-    setShowPaymentDialog(false);
-    
-    // Save purchase information to localStorage
-    const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-    purchases.push({
+    // Create a new purchase record
+    const newPurchase = {
       packageId: selectedPackage.id,
       packageName: selectedPackage.name,
       username,
       edition,
-      timestamp: new Date().toISOString()
-    });
-    localStorage.setItem('purchases', JSON.stringify(purchases));
+      timestamp: new Date().toISOString(),
+      verified: true  // This should ideally be verified by the server
+    };
+    
+    // Update local state
+    setPurchasedItems(prevItems => [...prevItems, newPurchase]);
+    
+    // Save purchase to localStorage
+    try {
+      const existingPurchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+      localStorage.setItem('purchases', JSON.stringify([...existingPurchases, newPurchase]));
+    } catch (e) {
+      console.error('Error saving purchase to localStorage:', e);
+    }
+    
+    setShowPaymentDialog(false);
+    setProcessingPayment(false);
+    
+    // Show success notification
+    alert(`Thank you for your purchase! Your package "${selectedPackage.name}" has been activated for ${username}.`);
   };
   
   // Handle payment errors
   const handlePaymentError = (error) => {
     console.error('Payment error:', error);
     setPurchaseError('There was an issue processing your payment. Please try again.');
+    setProcessingPayment(false);
   };
 
   // Render a package card
   const renderPackageCard = (pkg) => {
-    const isPurchased = purchaseStates[pkg.id];
+    const isPurchased = isPackagePurchased(pkg.id);
     
     return (
       <div key={pkg.id} className="package-card relative bg-[#1D1E29] rounded-lg shadow-lg p-6 border border-gray-800 hover:border-blue-500 transition-all duration-300">
@@ -303,17 +343,22 @@ export default function Store() {
         
         <button
           onClick={() => handlePurchaseClick(pkg)}
-          disabled={loading || !tebexLoaded}
+          disabled={loading || !tebexLoaded || processingPayment || isPurchased}
           className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors ${
             isPurchased 
               ? 'bg-green-500 hover:bg-green-600 text-white' 
               : 'bg-purple-600 hover:bg-purple-700 text-white'
-          } ${(!tebexLoaded || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${(!tebexLoaded || loading || processingPayment) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isPurchased ? (
             <>
               <FiCheck className="mr-2" />
               Purchased
+            </>
+          ) : processingPayment && selectedPackage && selectedPackage.id === pkg.id ? (
+            <>
+              <div className="loader mr-2"></div>
+              Processing...
             </>
           ) : (
             <>

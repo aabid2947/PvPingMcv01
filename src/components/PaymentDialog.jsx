@@ -63,6 +63,14 @@ function PaymentDialog({
         await new Promise(resolve => setTimeout(resolve, 500));
         setCheckoutStage('preparing');
         
+        // Get the Tebex store ID from environment variable
+        const storeId = import.meta.env.VITE_TEBEX_STORE_ID;
+        if (!storeId) {
+          throw new Error('Tebex store ID is missing. Please configure your environment variables.');
+        }
+        
+        console.log(`Initializing checkout for package ${packageDetails.id} for user ${username} (${edition})`);
+        
         // Use our tebexService to initiate checkout
         await initiateCheckout(
           packageDetails.id,
@@ -71,10 +79,15 @@ function PaymentDialog({
             game: edition === 'java' ? 'minecraft' : 'bedrock',
             // Success callback
             onSuccess: () => {
+              console.log('Payment successful!');
               setCheckoutSuccess(true);
               setCheckoutStage('complete');
               setIsLoading(false);
-              onPaymentSuccess();
+              
+              // Call the success handler
+              if (typeof onPaymentSuccess === 'function') {
+                onPaymentSuccess();
+              }
             },
             // Error callback
             onError: (error) => {
@@ -82,7 +95,11 @@ function PaymentDialog({
               setError(error.message || 'Payment failed. Please try again.');
               setCheckoutStage('error');
               setIsLoading(false);
-              onPaymentError(error);
+              
+              // Call the error handler
+              if (typeof onPaymentError === 'function') {
+                onPaymentError(error);
+              }
             },
             // This container will be used to render the checkout UI
             container: checkoutContainerRef.current,
@@ -99,7 +116,11 @@ function PaymentDialog({
         setError(error.message || 'Failed to initialize payment. Please try again.');
         setCheckoutStage('error');
         setIsLoading(false);
-        onPaymentError(error);
+        
+        // Call the error handler
+        if (typeof onPaymentError === 'function') {
+          onPaymentError(error);
+        }
       }
     };
 

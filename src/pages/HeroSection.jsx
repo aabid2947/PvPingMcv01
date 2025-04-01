@@ -34,7 +34,7 @@ export default function OriginMC() {
         // Check if the server is online and has player data
         if (response.data && response.data.online) {
           if (response.data.players && typeof response.data.players.online === 'number') {
-            setPlayerCount(response.data.players.max);
+            setPlayerCount(response.data.players.online);
           }
         }
       } catch (error) {
@@ -285,7 +285,7 @@ export default function OriginMC() {
                     {isPlayerCountLoading ? (
                       <span className="inline-block animate-pulse">Loading players...</span>
                     ) : (
-                      <span>{playerCount} max players</span>
+                      <span>{playerCount} online players</span>
                     )}
                   </p>
                 </div>
