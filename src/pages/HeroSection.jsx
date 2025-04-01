@@ -6,8 +6,8 @@ import Trailer from "../assets/trailer.png";
 import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import blue from "../assets/blue.png"
-import green from "../assets/green.png"
+import blue from "../assets/blue.svg"
+import green from "../assets/green.svg"
 
 export default function OriginMC() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -350,22 +350,22 @@ export default function OriginMC() {
             {/* Ready to Play Section - Adjusted to match Figma with less padding */}
             <div className=" col-span-6 relative flex items-center justify-center wrap rounded-3xl bg-gradient-to-b from-[#45A5FE14] to-[#20212D36] p-6 shadow-xl ">
               {/* Blue Crystal Decoration - Top Right */}
-              <div className="absolute top-[-30px] right-[-30px] ">
+              <div className="absolute top-[-50px] right-[-50px] ">
               <img src={blue} alt=""
-                height={120}
-                width={120}
+                height={150}
+                width={150}
                 className="brightness-130"
                  />
               </div>
               
               {/* Green Crystal Decoration - Bottom Left */}
-              <div className="absolute bottom-[-30px] left-[-30px] ">
+              <div className="absolute bottom-[-30px] left-[-40px] ">
                 
                 <img src={green} alt=""
                 height={100}
                 width={100}
                 className="brightness-130"
-                 />
+                  /> 
                   {/* <div className="w-full h-full bg-green-400 opacity-50 rotate-12"></div> */}
              
               </div>

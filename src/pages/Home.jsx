@@ -263,19 +263,19 @@ export default function OriginMC() {
       </div>
 
       {/* Play Now Section */}
-      <div className="w-full container mx-auto flex flex-row gap-8 px-4 md:w-4/5 py-8 md:py-16">
+      {/* <div className="w-full container mx-auto flex flex-row gap-8 px-4 md:w-4/5 py-8 md:py-16">
         <div className="bg-[#13141d] border border-gray-800 rounded-3xl flex flex-col md:flex-row items-center justify-between relative shadow-lg">
           {/* Left Side - Minecraft Character */}
-          <div className="absolute left-[-10rem] z-10 p-6 md:p-8">
+          {/* <div className="absolute left-[-10rem] z-10 p-6 md:p-8">
             <img
               src={frame}
               alt="Minecraft Character"
               className="h-48 md:h-76 w-auto"
             />
-          </div>
+          </div> */}
 
           {/* Center Content */}
-          <div className="text-center ml-32 relative z-10 p-4 md:p-6 flex-1">
+          {/* <div className="text-center ml-32 relative z-10 p-4 md:p-6 flex-1">
             <div className="absolute h-1/2 my-auto right-0 top-0 bottom-0 w-1 bg-blue-400"></div>
 
             <h2 className="text-xl md:text-2xl font-bold mb-2">
@@ -293,8 +293,8 @@ export default function OriginMC() {
               </button>
             </div>
           </div>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */} 
 
       {/* Player Guide Modal */}
       <PlayerGuide 
