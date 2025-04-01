@@ -60,6 +60,9 @@ const getBlogPosts = () => {
   return entries;
 };
 
+// Get environment variables from .env file
+const isDev = process.env.NODE_ENV === 'development';
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -80,7 +83,14 @@ export default defineConfig({
       // Allow serving files from content folder
       allow: ['content', '.']
     },
-    historyApiFallback: true
+    historyApiFallback: true,
+    proxy: {
+      '/api/tebex/packages': {
+        target: 'http://localhost:8888/.netlify/functions/tebex-packages',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/tebex\/packages/, ''),
+      },
+    },
   },
   preview: {
     port: 5000,

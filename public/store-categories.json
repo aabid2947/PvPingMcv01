@@ -4,13 +4,29 @@
       "id": "vip-packages",
       "name": "VIP Packages",
       "description": "Premium memberships with special perks and benefits",
-      "packages": ["3307111", "3307112"]
+      "packages": ["3307111", "3307112"],
+      "order": 1
     },
     {
       "id": "game-boosts",
       "name": "Game Boosts",
       "description": "Enhance your gameplay with these special items and abilities",
-      "packages": ["3307114", "3307115", "3307116", "3307117", "3307118"]
+      "packages": ["3307114", "3307115", "3307116", "3307117", "3307118"],
+      "order": 2
     }
-  ]
+  ],
+  "_metadata": {
+    "lastUpdated": "2023-07-01T00:00:00Z",
+    "version": "1.0",
+    "notes": "This file can be modified after deployment to reorganize packages into different categories"
+  },
+  "_examples": {
+    "category": {
+      "id": "example-category",
+      "name": "Example Category",
+      "description": "Description of this category",
+      "packages": ["package-id-1", "package-id-2"],
+      "order": 3
+    }
+  }
 } 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid } from 'react-icons/fi';
-import PurchaseButton from '../components/PurchaseButton';
-import { initializeTebex } from '../utils/tebexService';
+import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid, FiAlertCircle } from 'react-icons/fi';
+import { initializeTebex, fetchPackages } from '../utils/tebexService';
 import { fetchCategories, categorizePackages, getMockPackages } from '../utils/packageService';
+import LoginModal from '../components/LoginModal';
+import PaymentDialog from '../components/PaymentDialog';
 
 // Create context for store data
 export const StoreContext = createContext();
@@ -16,6 +17,7 @@ export function StoreProvider({ children }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categoryRefreshTimestamp, setCategoryRefreshTimestamp] = useState(Date.now());
 
   // Initialize Tebex SDK when component mounts
   useEffect(() => {
@@ -40,7 +42,7 @@ export function StoreProvider({ children }) {
           if (window.Tebex) {
             try {
               // Your store ID from Tebex (can be set in .env file)
-              const storeId = import.meta.env.VITE_TEBEX_STORE_ID || 'your-store-id';
+              const storeId = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
               
               if (storeId === 'your-store-id') {
                 console.warn('Tebex store ID not configured. Payment system will be disabled.');
@@ -49,11 +51,16 @@ export function StoreProvider({ children }) {
                 return;
               }
               
-              window.Tebex.init({
-                storeId: storeId,
-                theme: 'dark'
+              initializeTebex(storeId).then(success => {
+                if (success) {
+                  console.log('Tebex SDK initialized with store ID:', storeId);
+                  setTebexLoaded(true);
+                } else {
+                  console.error('Failed to initialize Tebex SDK');
+                  setError('Payment system not properly configured. Products are displayed for preview only.');
+                  setTebexLoaded(true); // Still load products even if SDK isn't working
+                }
               });
-              setTebexLoaded(true);
             } catch (configError) {
               console.error('Failed to initialize Tebex SDK:', configError);
               setError('Payment system not properly configured. Products are displayed for preview only.');
@@ -94,9 +101,8 @@ export function StoreProvider({ children }) {
         const fetchedCategories = await fetchCategories();
         setCategories(fetchedCategories);
         
-        // In a real implementation, fetch packages from Tebex API
-        // For now, we'll use sample data
-        const packageData = getMockPackages();
+        // Fetch packages from Tebex API
+        const packageData = await fetchPackages();
         setPackages(packageData);
         
         // Categorize packages
@@ -112,7 +118,27 @@ export function StoreProvider({ children }) {
     };
 
     loadPackagesAndCategories();
-  }, [tebexLoaded]);
+  }, [tebexLoaded, categoryRefreshTimestamp]);
+
+  // Refresh categories on demand
+  const refreshCategories = async () => {
+    try {
+      const freshCategories = await refreshCategories();
+      setCategories(freshCategories);
+      
+      // Re-categorize packages with fresh categories
+      const sortedPackages = categorizePackages(packages, freshCategories);
+      setCategorizedPackages(sortedPackages);
+      
+      // Update timestamp to trigger reload if needed
+      setCategoryRefreshTimestamp(Date.now());
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to refresh categories:', error);
+      return false;
+    }
+  };
 
   // Context value
   const value = {
@@ -122,7 +148,8 @@ export function StoreProvider({ children }) {
     categories,
     loading,
     error,
-    setPackages
+    setPackages,
+    refreshCategories
   };
 
   return (
@@ -148,6 +175,10 @@ const getCategoryIcon = (categoryId) => {
       return <FiStar className="mr-2 text-yellow-400" />;
     case 'game-boosts':
       return <FiTag className="mr-2 text-blue-400" />;
+    case 'cosmetics':
+      return <FiPackage className="mr-2 text-pink-400" />;
+    case 'ranks':
+      return <FiStar className="mr-2 text-green-400" />;
     default:
       return <FiPackage className="mr-2 text-purple-400" />;
   }
@@ -176,7 +207,7 @@ function FiCheck(props) {
 /**
  * Store page component displaying packages available for purchase
  */
-function Store() {
+export default function Store() {
   const { 
     categorizedPackages, 
     loading, 
@@ -188,33 +219,108 @@ function Store() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [animating, setAnimating] = useState(false);
 
+  // Package purchase state
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [purchaseStates, setPurchaseStates] = useState({});
+  const [username, setUsername] = useState('');
+  const [edition, setEdition] = useState('java');
+  const [purchaseError, setPurchaseError] = useState(null);
+
   // Handle category change with animation
-  const handleCategoryChange = (categoryId) => {
-    if (categoryId === selectedCategory) return;
+  const handleCategoryChange = (category) => {
+    if (category === selectedCategory) return;
     
     setAnimating(true);
+    
+    // Short delay to allow animation
     setTimeout(() => {
-      setSelectedCategory(categoryId);
+      setSelectedCategory(category);
       setAnimating(false);
     }, 300);
   };
 
-  // Render a package card with all details
-  const renderPackageCard = (pkg) => (
-    <div 
-      key={pkg.id} 
-      className={`package-card bg-[#1D1E29] rounded-lg shadow-md overflow-hidden ${
-        pkg.popular ? 'ring-2 ring-purple-500' : ''
-      }`}
-    >
-      {pkg.popular && (
-        <div className="bg-purple-500 text-white text-center py-1 font-medium">
-          Most Popular
-        </div>
-      )}
+  // Handle purchase button click
+  const handlePurchaseClick = (pkg) => {
+    // Reset any previous errors
+    setPurchaseError(null);
+    setSelectedPackage(pkg);
+    
+    // Check if there's a store error indicating payment system is unavailable
+    if (error && error.includes && error.includes('Payment system')) {
+      setPurchaseError('Payment system is not available at this time. Please try again later.');
+      return;
+    }
+    
+    // Check if user is already logged in (stored in localStorage)
+    const savedUsername = localStorage.getItem('minecraft_username');
+    const savedEdition = localStorage.getItem('minecraft_edition');
+    
+    if (savedUsername && savedEdition) {
+      setUsername(savedUsername);
+      setEdition(savedEdition);
+      setShowPaymentDialog(true);
+    } else {
+      setShowLoginModal(true);
+    }
+  };
+  
+  // Handle successful login
+  const handleLoginSuccess = (data) => {
+    setUsername(data.username);
+    setEdition(data.edition);
+    setShowLoginModal(false);
+    
+    // Save the username and edition to localStorage
+    localStorage.setItem('minecraft_username', data.username);
+    localStorage.setItem('minecraft_edition', data.edition);
+    
+    // Open payment dialog
+    setShowPaymentDialog(true);
+  };
+  
+  // Handle successful payment
+  const handlePaymentSuccess = () => {
+    // Update purchase state for the specific package
+    setPurchaseStates(prev => ({
+      ...prev,
+      [selectedPackage.id]: true
+    }));
+    
+    setShowPaymentDialog(false);
+    
+    // Save purchase information to localStorage
+    const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+    purchases.push({
+      packageId: selectedPackage.id,
+      packageName: selectedPackage.name,
+      username,
+      edition,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('purchases', JSON.stringify(purchases));
+  };
+  
+  // Handle payment errors
+  const handlePaymentError = (error) => {
+    console.error('Payment error:', error);
+    setPurchaseError('There was an issue processing your payment. Please try again.');
+  };
 
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-2">{pkg.name}</h2>
+  // Render a package card
+  const renderPackageCard = (pkg) => {
+    const isPurchased = purchaseStates[pkg.id];
+    
+    return (
+      <div key={pkg.id} className="package-card relative bg-[#1D1E29] rounded-lg shadow-lg p-6 border border-gray-800 hover:border-blue-500 transition-all duration-300">
+        {pkg.popular && (
+          <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+            POPULAR
+          </div>
+        )}
+        
+        <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
         <p className="text-gray-400 mb-4">{pkg.description}</p>
         
         <div className="text-3xl font-bold text-purple-600 mb-6">
@@ -230,17 +336,46 @@ function Store() {
           ))}
         </ul>
         
-        <PurchaseButton 
-          packageDetails={pkg} 
-          tebexStatus={{ loaded: tebexLoaded, error: error }}
-        />
+        {purchaseError && selectedPackage && selectedPackage.id === pkg.id && (
+          <div className="text-red-500 text-sm mb-2 flex items-center">
+            <FiAlertCircle className="mr-1" />
+            {purchaseError}
+          </div>
+        )}
+        
+        <button
+          onClick={() => handlePurchaseClick(pkg)}
+          disabled={loading || !tebexLoaded}
+          className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors ${
+            isPurchased 
+              ? 'bg-green-500 hover:bg-green-600 text-white' 
+              : 'bg-purple-600 hover:bg-purple-700 text-white'
+          } ${(!tebexLoaded || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isPurchased ? (
+            <>
+              <FiCheck className="mr-2" />
+              Purchased
+            </>
+          ) : (
+            <>
+              <FiShoppingCart className="mr-2" />
+              Purchase Now
+            </>
+          )}
+        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Get all categories for navigation
   const getCategoryButtons = () => {
     if (!categorizedPackages || Object.keys(categorizedPackages).length === 0) {
+      return null;
+    }
+
+    // If only one category exists and it's "uncategorized", don't show category filters
+    if (Object.keys(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
       return null;
     }
 
@@ -266,7 +401,7 @@ function Store() {
           </button>
           
           {Object.values(categorizedPackages).map((category) => (
-            category.id !== 'uncategorized' && (
+            category.id !== 'uncategorized' && category.packages && category.packages.length > 0 && (
               <button
                 key={category.id}
                 onClick={() => handleCategoryChange(category.id)}
@@ -285,7 +420,7 @@ function Store() {
             )
           ))}
           
-          {categorizedPackages.uncategorized && categorizedPackages.uncategorized.packages.length > 0 && (
+          {categorizedPackages.uncategorized && categorizedPackages.uncategorized.packages && categorizedPackages.uncategorized.packages.length > 0 && (
             <button
               onClick={() => handleCategoryChange('uncategorized')}
               className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
@@ -308,41 +443,59 @@ function Store() {
 
   // Filter packages based on selected category
   const getFilteredPackages = () => {
+    // If no packages exist yet
+    if (!categorizedPackages || Object.keys(categorizedPackages).length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-400">No packages available</p>
+        </div>
+      );
+    }
+
     if (selectedCategory === 'all') {
-      if (Object.values(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
-        // If only uncategorized packages exist, show them without category header
+      // Case 1: Only uncategorized packages and nothing else
+      if (Object.keys(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
+        // If the packages are in the uncategorized category but it's the only one, show them without the category header
         return (
           <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
             {categorizedPackages.uncategorized.packages.map(renderPackageCard)}
           </div>
         );
       } else {
-        // Show all packages grouped by category
+        // Case 2: Regular category display
         return (
           <div className={`transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
             {Object.values(categorizedPackages).map((category) => (
-              <div key={category.id} className="mb-12">
-                <div className="flex items-center mb-6">
-                  {getCategoryIcon(category.id)}
-                  <h2 className="text-2xl font-bold text-white">
-                    {category.name}
-                  </h2>
+              category.packages && category.packages.length > 0 && (
+                <div key={category.id} className="mb-12">
+                  <div className="flex items-center mb-6">
+                    {getCategoryIcon(category.id)}
+                    <h2 className="text-2xl font-bold text-white">
+                      {category.name}
+                    </h2>
+                  </div>
+                  {category.description && (
+                    <p className="text-gray-400 mb-6">{category.description}</p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {category.packages.map(renderPackageCard)}
+                  </div>
                 </div>
-                {category.description && (
-                  <p className="text-gray-400 mb-6">{category.description}</p>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {category.packages.map(renderPackageCard)}
-                </div>
-              </div>
+              )
             ))}
           </div>
         );
       }
     } else {
-      // Show only the selected category
+      // Case 3: Single selected category
       const selectedCategoryData = categorizedPackages[selectedCategory];
-      if (!selectedCategoryData) return null;
+      if (!selectedCategoryData || !selectedCategoryData.packages || selectedCategoryData.packages.length === 0) {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No packages available in this category</p>
+          </div>
+        );
+      }
 
       return (
         <div className={`mb-12 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
@@ -409,17 +562,17 @@ function Store() {
         </style>
       </Helmet>
 
-      <div className="mb-16 flex items-center">
-        <div className="flex items-center gap-3">
+        <div className="mb-16 flex items-center">
+          <div className="flex items-center gap-3">
           <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
             <FiShoppingCart className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Store</h1>
-            <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Store</h1>
+              <div className="w-24 h-1 bg-blue-500 mt-1"></div>
+            </div>
           </div>
         </div>
-      </div>
         
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 max-w-2xl mx-auto">
@@ -438,8 +591,8 @@ function Store() {
           {/* Category Navigation Buttons */}
           <div className="category-fade-in" style={{ animationDelay: '0.1s' }}>
             {getCategoryButtons()}
-          </div>
-          
+        </div>
+        
           {/* Display filtered packages */}
           <div className="category-fade-in" style={{ animationDelay: '0.3s' }}>
             {getFilteredPackages()}
@@ -465,8 +618,26 @@ function Store() {
           Contact Support
         </a>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+      
+      {/* Payment Dialog - rendered outside cards at the root level */}
+      {selectedPackage && (
+        <PaymentDialog
+          isOpen={showPaymentDialog}
+          onClose={() => setShowPaymentDialog(false)}
+          packageDetails={selectedPackage}
+          username={username}
+          edition={edition}
+          onPaymentSuccess={handlePaymentSuccess}
+          onPaymentError={handlePaymentError}
+        />
+      )}
     </div>
   );
 }
-
-export default Store;

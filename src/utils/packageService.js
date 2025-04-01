@@ -8,22 +8,41 @@
  */
 export async function fetchCategories() {
   try {
+    // Attempt to fetch the JSON file
     const response = await fetch('/store-categories.json');
     
     if (!response.ok) {
+      console.error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to fetch categories: ${response.status}`);
     }
     
+    // Parse the JSON data
     const data = await response.json();
     
-    // If the file is empty or has no categories, return an empty array
-    if (!data || !data.categories || data.categories.length === 0) {
+    // Validate the JSON structure
+    if (!data || !data.categories || !Array.isArray(data.categories)) {
+      console.warn('Invalid categories format in store-categories.json');
       return [];
     }
     
-    return data.categories;
+    // Return empty array if no categories exist
+    if (data.categories.length === 0) {
+      console.info('No categories found in store-categories.json');
+      return [];
+    }
+    
+    // Return the categories with validation
+    return data.categories.map(category => ({
+      // Ensure all required fields exist
+      id: category.id || `category-${Math.random().toString(36).substr(2, 9)}`,
+      name: category.name || 'Unnamed Category',
+      description: category.description || '',
+      packages: Array.isArray(category.packages) ? category.packages : [],
+      order: typeof category.order === 'number' ? category.order : 0
+    })).sort((a, b) => a.order - b.order); // Sort by order if provided
   } catch (error) {
     console.error('Error fetching categories:', error);
+    // Return empty array on error
     return [];
   }
 }
@@ -34,11 +53,32 @@ export async function fetchCategories() {
  * @param {Array} categories - Array of category objects
  * @returns {Object} Object with categorized packages
  */
-export function categorizePackages(packages, categories) {
-  // If no categories exist, return all packages under a null category
-  if (!categories || categories.length === 0) {
+export function categorizePackages(packages = [], categories = []) {
+  // Guard against null/undefined inputs
+  if (!packages) packages = [];
+  if (!categories) categories = [];
+  
+  // If no packages exist, return empty categories
+  if (packages.length === 0) {
     return {
-      uncategorized: packages
+      uncategorized: {
+        id: 'uncategorized',
+        name: 'All Packages',
+        description: 'All available packages',
+        packages: []
+      }
+    };
+  }
+
+  // If no categories exist, return all packages as uncategorized
+  if (categories.length === 0) {
+    return {
+      uncategorized: {
+        id: 'uncategorized',
+        name: 'All Packages',
+        description: 'All available packages',
+        packages: packages
+      }
     };
   }
   
@@ -63,8 +103,15 @@ export function categorizePackages(packages, categories) {
   packages.forEach(pkg => {
     let categorized = false;
     
+    // Skip packages without IDs
+    if (!pkg.id) {
+      console.warn('Package without ID found, skipping categorization');
+      return;
+    }
+    
     for (const category of categories) {
-      if (category.packages && category.packages.includes(pkg.id)) {
+      // Ensure category.packages is an array before checking
+      if (Array.isArray(category.packages) && category.packages.includes(pkg.id)) {
         result[category.id].packages.push(pkg);
         categorized = true;
         break;
@@ -84,11 +131,21 @@ export function categorizePackages(packages, categories) {
     }
   });
   
+  // If only one category exists, rename it to match the category
+  if (Object.keys(result).length === 1) {
+    const onlyCategory = Object.values(result)[0];
+    if (onlyCategory.id === 'uncategorized') {
+      onlyCategory.name = 'All Packages';
+      onlyCategory.description = 'All available packages';
+    }
+  }
+  
   return result;
 }
 
 /**
  * Get mock packages for development mode
+ * Each mock package includes id, name, description, price, features, and popular flag
  * @returns {Array} Array of package objects
  */
 export function getMockPackages() {
@@ -104,7 +161,8 @@ export function getMockPackages() {
         'Priority server access during high traffic',
         '10% discount on future purchases'
       ],
-      popular: true
+      popular: true,
+      category: 'vip-packages'
     },
     {
       id: '3307112',
@@ -117,7 +175,8 @@ export function getMockPackages() {
         '3 exclusive mystery crates',
         'Special particle effects for 7 days'
       ],
-      popular: false
+      popular: false,
+      category: 'vip-packages'
     },
     {
       id: '3307114',
@@ -130,7 +189,8 @@ export function getMockPackages() {
         'Exclusive cosmetic items and effects',
         '5 vote keys and 3 legendary crates'
       ],
-      popular: true
+      popular: true,
+      category: 'game-boosts'
     },
     {
       id: '3307115',
@@ -143,7 +203,8 @@ export function getMockPackages() {
         'Auto-renewal option',
         'Works in all non-restricted zones'
       ],
-      popular: false
+      popular: false,
+      category: 'game-boosts'
     },
     {
       id: '3307116',
@@ -156,7 +217,8 @@ export function getMockPackages() {
         'Access to exclusive enchantment table',
         '1 legendary enchantment scroll'
       ],
-      popular: false
+      popular: false,
+      category: 'game-boosts'
     },
     {
       id: '3307117',
@@ -169,7 +231,8 @@ export function getMockPackages() {
         'Chance for rare and exclusive items',
         'Automatic delivery for 4 weeks'
       ],
-      popular: false
+      popular: false,
+      category: 'game-boosts'
     },
     {
       id: '3307118',
@@ -182,7 +245,73 @@ export function getMockPackages() {
         '3 money pouches with random amounts',
         'Access to special merchant with discounted prices'
       ],
-      popular: false
+      popular: false,
+      category: 'game-boosts'
     }
   ];
+}
+
+/**
+ * Create a default store-categories.json file if it doesn't exist
+ * @param {Array} packages - Array of package objects to categorize
+ * @returns {Object} Default categories object
+ */
+export function createDefaultCategories(packages = []) {
+  // Extract unique categories from packages
+  const categorySet = new Set();
+  packages.forEach(pkg => {
+    if (pkg.category && typeof pkg.category === 'string') {
+      categorySet.add(pkg.category);
+    }
+  });
+  
+  // Convert to array of category objects
+  const categories = Array.from(categorySet).map((categoryName, index) => {
+    // Generate a slug-style ID from the category name
+    const id = categoryName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    // Get all package IDs for this category
+    const packageIds = packages
+      .filter(pkg => pkg.category === categoryName)
+      .map(pkg => pkg.id);
+    
+    return {
+      id: id || `category-${index}`,
+      name: categoryName,
+      description: `${categoryName} for the Minecraft server`,
+      packages: packageIds,
+      order: index
+    };
+  });
+  
+  return {
+    categories
+  };
+}
+
+/**
+ * Refresh categories from server after a change
+ * @returns {Promise<Array>} Array of category objects
+ */
+export async function refreshCategories() {
+  // Clear browser cache for the file to ensure we get the latest version
+  const cacheBuster = `?cb=${Date.now()}`;
+  try {
+    const response = await fetch(`/store-categories.json${cacheBuster}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to refresh categories: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !data.categories) {
+      return [];
+    }
+    
+    return data.categories;
+  } catch (error) {
+    console.error('Error refreshing categories:', error);
+    return [];
+  }
 } 
