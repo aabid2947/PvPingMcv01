@@ -79,7 +79,12 @@ export default defineConfig({
     fs: {
       // Allow serving files from content folder
       allow: ['content', '.']
-    }
+    },
+    historyApiFallback: true
+  },
+  preview: {
+    port: 5000,
+    historyApiFallback: true
   },
   build: {
     outDir: 'dist',
