@@ -3,7 +3,7 @@
  */
 
 // Check if we're in development mode
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
 
 // In-memory cache for package data
 let packageCache = {
@@ -44,7 +44,7 @@ export const initializeTebex = async (storeId) => {
 };
 
 /**
- * Fetch packages from Tebex API via serverless function
+ * Fetch packages from mock data or directly from client-side data
  * @returns {Promise<Array>} - Promise that resolves to array of package objects
  */
 export const fetchPackages = async () => {
@@ -57,35 +57,17 @@ export const fetchPackages = async () => {
   }
 
   try {
-    // Call our serverless function endpoint
-    const isDev = import.meta.env.DEV;
-    
-    // Use the appropriate API endpoint based on environment
-    const apiUrl = isDev
-      ? '/api/tebex/packages' // Local development proxy
-      : '/.netlify/functions/tebex-packages'; // Netlify Functions in production
-    
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch packages: ${response.status}`);
-    }
-    
-    const data = await response.json();
+    // Always use mock packages since we're not using server functions
+    console.log('Using mock packages for store data');
+    const mockData = getMockPackages();
     
     // Cache the result
-    packageCache.data = data.packages || [];
+    packageCache.data = mockData;
     packageCache.timestamp = Date.now();
     
-    return packageCache.data;
+    return mockData;
   } catch (error) {
     console.error('Error fetching packages:', error);
-    
-    // If we're in development mode, return mock data
-    if (import.meta.env.DEV) {
-      console.log('Development mode: Using mock packages');
-      return getMockPackages();
-    }
     
     // If we have stale cache data, return it rather than nothing
     if (packageCache.data) {
@@ -127,7 +109,7 @@ export async function initiateCheckout(packageId, username, options = {}) {
 
   try {
     // In development mode, use mock implementation
-    if (isDevelopment || import.meta.env.DEV) {
+    if (isDevelopment) {
       console.log(`Creating mock checkout for ${username} with package ${packageId}`);
       
       // Create mock checkout UI if container is provided

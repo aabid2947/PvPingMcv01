@@ -23,15 +23,14 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     const loadTebexSDK = async () => {
       try {
-        // Check if we're in development mode using import.meta.env instead of process.env
+        // Check if we're in development mode
         const isDev = import.meta.env.DEV;
         
-        if (isDev) {
-          console.log('Development mode: Skipping Tebex SDK load');
-          setTebexLoaded(true);
-          return;
-        }
-
+        // Set tebexLoaded directly since we're always using mock data
+        setTebexLoaded(true);
+        return;
+        
+        /* Commenting out real Tebex SDK loading since we're using mock data
         // Load Tebex SDK
         const script = document.createElement('script');
         script.src = 'https://checkout.tebex.io/js/tebex.js';
@@ -78,6 +77,7 @@ export function StoreProvider({ children }) {
           setTebexLoaded(true); // Still load products even if SDK fails to load
         };
         document.body.appendChild(script);
+        */
       } catch (error) {
         console.error('Failed to load Tebex SDK:', error);
         // Set tebexLoaded to true regardless of errors to ensure products still load

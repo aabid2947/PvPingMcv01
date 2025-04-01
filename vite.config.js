@@ -84,13 +84,6 @@ export default defineConfig({
       allow: ['content', '.']
     },
     historyApiFallback: true,
-    proxy: {
-      '/api/tebex/packages': {
-        target: 'http://localhost:8888/.netlify/functions/tebex-packages',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/tebex\/packages/, ''),
-      },
-    },
   },
   preview: {
     port: 5000,

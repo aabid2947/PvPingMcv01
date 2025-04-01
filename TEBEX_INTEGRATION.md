@@ -2,65 +2,50 @@
 
 This document explains how to set up and configure the Tebex integration for the Minecraft store.
 
+## Mock Implementation
+
+This implementation uses mock data for store packages and checkout. In a real production environment, you would need to create a backend service to securely interact with the Tebex API.
+
 ## Environment Variables
 
-The Tebex integration relies on environment variables to securely store configuration. These should be set in your deployment platform (Netlify, Vercel, etc.) and in a `.env` file for local development.
-
-Required environment variables:
+For a real Tebex integration, you would need to configure these environment variables in a .env file for local development:
 
 - `VITE_TEBEX_STORE_ID`: Your Tebex store ID (visible in client-side code)
-- `TEBEX_API_KEY`: Your Tebex API key (used only in server-side code)
-- `VITE_TEBEX_PACKAGE_IDS`: Comma-separated list of package IDs to include in the store (optional)
 
 Example `.env` file:
 
 ```
 VITE_TEBEX_STORE_ID=752140
-TEBEX_API_KEY=your_tebex_api_key_here
-VITE_TEBEX_PACKAGE_IDS=3307111,3307112,3307114,3307115,3307116,3307117,3307118
 ```
 
 ## Getting Your Tebex API Key
+
+For a real Tebex integration, you would need to:
 
 1. Log in to your Tebex account at [https://creator.tebex.io/](https://creator.tebex.io/)
 2. Go to your server dashboard
 3. Navigate to "Settings" > "API Keys"
 4. Create a new API key with appropriate permissions (at minimum, read-only access to packages)
-5. Copy the API key and store it securely in your environment variables
 
 ## Security Considerations
 
-- The Tebex API key is kept secure by only using it in server-side code
-- Client-side code only uses the Store ID, which is safe to expose
-- API calls to the Tebex API are proxied through serverless functions
-- All requests are authenticated with the API key stored securely on the server
+In a real production environment:
+
+- Your Tebex API key should never be exposed to client-side code
+- API calls to the Tebex API should be proxied through a secure backend
+- User data should be handled securely according to privacy regulations
 
 ## Development Mode
 
-In development mode, the integration will:
+The current implementation:
 
-1. Skip loading the Tebex SDK to avoid rate limits and enable offline development
-2. Use mock package data that resembles real Tebex packages
-3. Simulate checkouts with a 3-second delay and automatic success
-
-To test with real Tebex data in development:
-
-1. Create a `.env` file with your real Tebex credentials
-2. Run `npm run netlify:dev` to use the Netlify Functions locally
-3. The store will connect to the Tebex API through the serverless functions
-
-## API Endpoints
-
-The integration uses the following API endpoints:
-
-- `/.netlify/functions/tebex-packages` (Netlify deployment)
-- `/api/tebex/packages` (Vercel deployment and local development proxy)
-
-These endpoints fetch package data from Tebex, cache it for performance, and transform it to match the application's data model.
+1. Uses mock package data that resembles real Tebex packages
+2. Simulates checkouts with a delay and automatic success
+3. Stores purchase information in localStorage for testing
 
 ## Customizing Categories
 
-Packages are organized into categories using the `store-categories.json` file located in the `public` directory. This file can be edited after deployment to reorganize packages without code changes.
+Packages are organized into categories using the `store-categories.json` file located in the `public` directory. This file can be edited to reorganize packages without code changes.
 
 ### Category JSON Structure
 
@@ -90,14 +75,13 @@ Each category object requires the following fields:
 - `packages`: Array of package IDs to include in this category
 - `order`: Numeric value to sort categories (lower numbers appear first)
 
-### Editing Categories After Deployment
+### Editing Categories
 
-To modify categories after deployment:
+To modify categories:
 
 1. Edit the `store-categories.json` file
 2. Update the categories array with your desired changes
-3. Upload the modified file to your server's `/public` directory
-4. The store will automatically use the new categories on page refresh
+3. Save the file to the `public` directory
 
 ### Dynamic Category System
 
@@ -110,17 +94,22 @@ The store automatically handles various category scenarios:
 
 ## Troubleshooting
 
-If you encounter issues with the Tebex integration:
+If you encounter issues with the store:
 
-1. Check that your environment variables are correctly set
-2. Verify that your Tebex API key has appropriate permissions
-3. Look for errors in the browser console or server logs
-4. Ensure your Tebex store is active and properly configured
-5. Check that the packages specified in `VITE_TEBEX_PACKAGE_IDS` exist in your store
-6. Verify that your `store-categories.json` file has valid JSON format
-7. Check that package IDs in the categories match the IDs from your Tebex store
+1. Check that the `public/store-categories.json` file exists and has valid JSON format
+2. Verify that the mock package IDs in the code match those in your categories
+3. Check browser console for any JavaScript errors
+4. Make sure the application has properly loaded the mock data
+
+## Real Implementation
+
+To implement a real Tebex store:
+
+1. Create a secure backend API to handle Tebex API requests
+2. Store your Tebex API key securely in server environment variables
+3. Update the `tebexService.js` file to use your real API instead of mock data
+4. Implement proper error handling and security measures
 
 ## Support
 
-For issues with the Tebex integration, please contact the development team.
 For issues with Tebex itself, contact Tebex support at [https://help.tebex.io/](https://help.tebex.io/) 
