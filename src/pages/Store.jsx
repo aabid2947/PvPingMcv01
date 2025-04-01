@@ -434,12 +434,12 @@ export default function Store() {
               <span className="ml-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full">
                 {categorizedPackages.uncategorized.packages.length}
               </span>
-            </button>
+        </button>
           )}
         </div>
-      </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Filter packages based on selected category
   const getFilteredPackages = () => {
