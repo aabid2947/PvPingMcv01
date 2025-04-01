@@ -4,6 +4,24 @@ export default {
       const url = new URL(request.url);
       const { pathname } = url;
       
+      // Handle API routes
+      if (pathname.startsWith('/api/')) {
+        // Forward API requests to the API handler
+        const apiRequest = new Request(request.url, {
+          method: request.method,
+          headers: request.headers,
+          body: request.body,
+        });
+        
+        // Add environment variables to the request
+        apiRequest.env = {
+          TEBEX_STORE_ID: env.TEBEX_STORE_ID,
+          TEBEX_API_KEY: env.TEBEX_API_KEY,
+        };
+        
+        return env.API.fetch(apiRequest);
+      }
+      
       // Handle static assets
       if (
         pathname.startsWith('/assets/') ||

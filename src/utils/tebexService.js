@@ -14,32 +14,59 @@ let packageCache = {
 
 /**
  * Initialize the Tebex.js library
- * @param {string} storeId - The Tebex store ID
  * @returns {Promise} - Resolves when Tebex is loaded
  */
-export const initializeTebex = async (storeId) => {
-  if (!storeId) {
-    console.error('Tebex store ID is required');
+export const initializeTebex = async () => {
+  try {
+    // Get Tebex configuration from our secure API
+    const response = await fetch('/api/tebex/config');
+    if (!response.ok) {
+      throw new Error('Failed to fetch Tebex configuration');
+    }
+    
+    const config = await response.json();
+    
+    // Initialize Tebex with the configuration from our secure API
+    if (window.Tebex) {
+      window.Tebex.init({
+        storeId: config.storeId,
+        theme: 'dark'
+      });
+      console.log('Tebex SDK initialized successfully');
+      return true;
+    }
+    
+    console.error('Tebex SDK not available');
+    return false;
+  } catch (error) {
+    console.error('Failed to initialize Tebex SDK:', error);
     return false;
   }
+};
 
-  return new Promise((resolve) => {
+/**
+ * Load the Tebex SDK script
+ * @returns {Promise} - Resolves when the script is loaded
+ */
+export const loadTebexScript = () => {
+  return new Promise((resolve, reject) => {
     if (window.Tebex) {
-      try {
-        window.Tebex.init({
-          storeId: storeId,
-          theme: 'dark'
-        });
-        console.log('Tebex SDK initialized successfully');
-        resolve(true);
-      } catch (error) {
-        console.error('Failed to initialize Tebex SDK:', error);
-        resolve(false);
-      }
-    } else {
-      console.error('Tebex SDK not available');
-      resolve(false);
+      resolve();
+      return;
     }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.tebex.io/js/tebex.js';
+    script.async = true;
+    script.onload = () => {
+      console.log('Tebex SDK script loaded successfully');
+      resolve();
+    };
+    script.onerror = (error) => {
+      console.error('Failed to load Tebex SDK script:', error);
+      reject(error);
+    };
+    document.body.appendChild(script);
   });
 };
 
@@ -224,9 +251,22 @@ export async function createBasket(username, isBedrock = false) {
   }
 
   try {
-    const basket = await window.tebex.createBasket({
-      username: formattedUsername
+    // Use our secure API endpoint to create the basket
+    const response = await fetch('/api/tebex/basket', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: formattedUsername
+      })
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to create basket');
+    }
+
+    const basket = await response.json();
     return basket;
   } catch (error) {
     console.error('Error creating Tebex basket:', error);

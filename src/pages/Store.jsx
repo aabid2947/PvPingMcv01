@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid, FiAlertCircle } from 'react-icons/fi';
-import { initializeTebex, fetchPackages } from '../utils/tebexService';
+import { initializeTebex, loadTebexScript, fetchPackages } from '../utils/tebexService';
 import { fetchCategories, categorizePackages, getMockPackages } from '../utils/packageService';
 import LoginModal from '../components/LoginModal';
 import PaymentDialog from '../components/PaymentDialog';
@@ -23,66 +23,24 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     const loadTebexSDK = async () => {
       try {
-        // Check if we're in development mode
-        const isDev = import.meta.env.DEV;
+        // Load Tebex SDK script
+        await loadTebexScript();
         
-        // Set tebexLoaded directly since we're always using mock data
-        setTebexLoaded(true);
-        return;
+        // Initialize Tebex with store ID from environment
+        const success = await initializeTebex();
         
-        /* Commenting out real Tebex SDK loading since we're using mock data
-        // Load Tebex SDK
-        const script = document.createElement('script');
-        script.src = 'https://checkout.tebex.io/js/tebex.js';
-        script.async = true;
-        script.onload = () => {
-          console.log('Tebex SDK loaded successfully');
-          // Initialize Tebex with your store ID
-          if (window.Tebex) {
-            try {
-              // Your store ID from Tebex (can be set in .env file)
-              const storeId = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
-              
-              if (storeId === 'your-store-id') {
-                console.warn('Tebex store ID not configured. Payment system will be disabled.');
-                setError('Payment system not configured. Products are displayed for preview only.');
-                setTebexLoaded(true); // Still load products even if payment system isn't configured
-                return;
-              }
-              
-              initializeTebex(storeId).then(success => {
-                if (success) {
-                  console.log('Tebex SDK initialized with store ID:', storeId);
-                  setTebexLoaded(true);
-                } else {
-                  console.error('Failed to initialize Tebex SDK');
-                  setError('Payment system not properly configured. Products are displayed for preview only.');
-                  setTebexLoaded(true); // Still load products even if SDK isn't working
-                }
-              });
-            } catch (configError) {
-              console.error('Failed to initialize Tebex SDK:', configError);
-              setError('Payment system not properly configured. Products are displayed for preview only.');
-              setTebexLoaded(true); // Still load products even if payment system isn't configured
-            }
-          } else {
-            console.error('Tebex SDK not properly loaded');
-            setError('Payment system unavailable. Products are displayed for preview only.');
-            setTebexLoaded(true); // Still load products even if SDK isn't working
-          }
-        };
-        script.onerror = (error) => {
-          console.error('Failed to load Tebex SDK:', error);
-          setError('Payment system unavailable. Products are displayed for preview only.');
-          setTebexLoaded(true); // Still load products even if SDK fails to load
-        };
-        document.body.appendChild(script);
-        */
+        if (success) {
+          console.log('Tebex SDK initialized successfully');
+          setTebexLoaded(true);
+        } else {
+          console.error('Failed to initialize Tebex SDK');
+          setError('Payment system not properly configured. Products are displayed for preview only.');
+          setTebexLoaded(true); // Still load products even if SDK isn't working
+        }
       } catch (error) {
         console.error('Failed to load Tebex SDK:', error);
-        // Set tebexLoaded to true regardless of errors to ensure products still load
-        setTebexLoaded(true);
         setError('Payment system unavailable. Products are displayed for preview only.');
+        setTebexLoaded(true); // Still load products even if SDK fails to load
       }
     };
 
