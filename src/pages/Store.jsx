@@ -1,18 +1,16 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid, FiAlertCircle, FiPlus } from 'react-icons/fi';
-import { initializeTebex, loadTebexScript, fetchPackages } from '../utils/tebexService';
-import { fetchCategories, categorizePackages, getMockPackages } from '../utils/packageService';
-import LoginModal from '../components/LoginModal';
-import PaymentDialog from '../components/PaymentDialog';
+import { fetchCategories, categorizePackages } from '../utils/packageService';
+import * as tebexHeadlessService from '../utils/tebexHeadlessService';
 import { useCart } from '../contexts/CartContext';
+import CartModal from '../components/CartModal';
 
 // Create context for store data
 export const StoreContext = createContext();
 
 // Store provider component
 export function StoreProvider({ children }) {
-  const [tebexLoaded, setTebexLoaded] = useState(false);
   const [packages, setPackages] = useState([]);
   const [categorizedPackages, setCategorizedPackages] = useState({});
   const [categories, setCategories] = useState([]);
@@ -20,83 +18,92 @@ export function StoreProvider({ children }) {
   const [error, setError] = useState(null);
   const [categoryRefreshTimestamp, setCategoryRefreshTimestamp] = useState(Date.now());
 
-  // Initialize Tebex SDK when component mounts
+  // Load packages and categories when component mounts
   useEffect(() => {
-    const loadTebexSDK = async () => {
-      try {
-        setLoading(true);
-        
-        // Load Tebex SDK script with improved error handling
-        await loadTebexScript().catch(error => {
-          console.warn('Tebex script loading failed, using fallback:', error);
-          // Script loading will now handle fallbacks internally
-        });
-        
-        // Initialize Tebex with store ID from environment
-        const success = await initializeTebex();
-        
-        if (success) {
-          console.log('Tebex SDK initialized successfully');
-          setTebexLoaded(true);
-        } else {
-          console.warn('Using mock Tebex implementation');
-          // We're still setting tebexLoaded to true because we're using a mock implementation
-          setTebexLoaded(true);
-          setError('Using test mode for payments. In production, real payments will be processed.');
-        }
-      } catch (error) {
-        console.error('Failed to initialize payment system:', error);
-        // We're still setting tebexLoaded to true because we're using a mock implementation
-        setTebexLoaded(true);
-        setError('Using test mode for payments. In production, real payments will be processed.');
-      } finally {
-        // Make sure to finish loading in any case
-        setLoading(false);
-      }
-    };
-
-    loadTebexSDK();
-  }, []);
-
-  // Load packages and categories when Tebex is loaded
-  useEffect(() => {
-    if (!tebexLoaded) return;
-
     const loadPackagesAndCategories = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        setLoading(true);
-        
-        // Fetch categories from JSON file
+        // Step 1: Fetch categories
         const fetchedCategories = await fetchCategories();
         setCategories(fetchedCategories);
         
-        // Fetch packages from Tebex API
-        const packageData = await fetchPackages();
-        setPackages(packageData);
+        // Step 2: Fetch packages
+        let packageData;
+        let formattedPackages = [];
+        let sortedPackages = {};
         
-        // Categorize packages
-        const sortedPackages = categorizePackages(packageData, fetchedCategories);
-        setCategorizedPackages(sortedPackages);
+        try {
+          packageData = await tebexHeadlessService.fetchPackages();
+          
+          if (!packageData) {
+            throw new Error('No package data received');
+          }
+          
+          // Format packages for display
+          formattedPackages = formatPackagesForDisplay(packageData);
+          setPackages(formattedPackages);
+          
+          // Ensure formattedPackages is an array before categorizing
+          if (!Array.isArray(formattedPackages)) {
+            console.warn('Formatted packages is not an array', formattedPackages);
+            formattedPackages = [];
+          }
+          
+          // Categorize packages - ensure we pass an array to categorizePackages
+          sortedPackages = categorizePackages(formattedPackages, fetchedCategories);
+        } catch (packageError) {
+          console.error('Error loading packages:', packageError);
+          formattedPackages = [];
+          sortedPackages = {
+            uncategorized: {
+              id: 'uncategorized',
+              name: 'All Packages',
+              description: 'All available packages',
+              packages: []
+            }
+          };
+          
+          setError('Failed to load store packages. Using empty catalog.');
+        }
         
-        setLoading(false);
-      } catch (err) {
-        console.error('Error loading store data:', err);
-        setError('Failed to load store data. Please try again later.');
+        // Update state with whatever data we have
+        setPackages(formattedPackages || []);
+        setCategorizedPackages(sortedPackages || {
+          uncategorized: {
+            id: 'uncategorized',
+            name: 'All Packages',
+            description: 'All available packages',
+            packages: []
+          }
+        });
+      } catch (error) {
+        console.error('Error in loadPackagesAndCategories:', error);
+        setError('Failed to load store. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
 
     loadPackagesAndCategories();
-  }, [tebexLoaded, categoryRefreshTimestamp]);
+  }, [categoryRefreshTimestamp]);
 
   // Refresh categories on demand
   const refreshCategories = async () => {
     try {
-      const freshCategories = await refreshCategories();
+      const freshCategories = await fetchCategories();
       setCategories(freshCategories);
       
+      // Ensure packages is an array before re-categorizing
+      let packagesToUse = packages;
+      if (!Array.isArray(packagesToUse)) {
+        console.warn('Packages is not an array during refresh', packagesToUse);
+        packagesToUse = [];
+      }
+      
       // Re-categorize packages with fresh categories
-      const sortedPackages = categorizePackages(packages, freshCategories);
+      const sortedPackages = categorizePackages(packagesToUse, freshCategories);
       setCategorizedPackages(sortedPackages);
       
       // Update timestamp to trigger reload if needed
@@ -109,9 +116,103 @@ export function StoreProvider({ children }) {
     }
   };
 
+  // Helper function to format packages for display
+  const formatPackagesForDisplay = (packageData) => {
+    // Handle undefined or null packageData
+    if (!packageData) {
+      console.warn('Package data is undefined or null', packageData);
+      return [];
+    }
+    
+    // Handle if packageData is already in the correct format - an array of packages
+    if (Array.isArray(packageData)) {
+      return packageData.map(pkg => ({
+        id: pkg.id || `unknown-${Math.random().toString(36).substring(2, 9)}`,
+        name: pkg.name || 'Unknown Package',
+        description: pkg.description || '',
+        price: formatPrice(pkg.price || pkg.base_price || 0, pkg.currency),
+        image: pkg.image || null,
+        features: extractFeaturesFromDescription(pkg.description || ''),
+        popular: pkg.popular || Math.random() > 0.7 // Random popular flag for demo purposes
+      }));
+    }
+    
+    // Handle Tebex Headless API format with a data property
+    if (packageData && packageData.data) {
+      if (Array.isArray(packageData.data)) {
+        return packageData.data.map(pkg => ({
+          id: pkg.id || `unknown-${Math.random().toString(36).substring(2, 9)}`,
+          name: pkg.name || 'Unknown Package',
+          description: pkg.description || '',
+          price: formatPrice(pkg.base_price || 0, pkg.currency),
+          image: pkg.image || null,
+          features: extractFeaturesFromDescription(pkg.description || ''),
+          popular: pkg.popular || Math.random() > 0.7 // Random popular flag for demo purposes
+        }));
+      }
+    }
+    
+    // If we get here, we don't recognize the format
+    console.warn('Unrecognized package data format', packageData);
+    return [];
+  };
+
+  // Helper function to format price with currency
+  const formatPrice = (price, currency = 'USD') => {
+    if (price === undefined || price === null) {
+      return '$0.00';
+    }
+    
+    // If price is already a string (like "$9.99"), return it
+    if (typeof price === 'string' && price.includes('$')) {
+      return price;
+    }
+    
+    // Try to convert to a number if it's a string without currency symbol
+    let numericPrice = price;
+    if (typeof price === 'string') {
+      numericPrice = parseFloat(price.replace(/[^0-9.]/g, ''));
+    }
+    
+    // Check if conversion to number worked
+    if (isNaN(numericPrice)) {
+      return '$0.00';
+    }
+    
+    // Format using Intl.NumberFormat for localized currency display
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD'
+      }).format(numericPrice);
+    } catch (error) {
+      console.error('Error formatting price:', error);
+      return `$${numericPrice.toFixed(2)}`;
+    }
+  };
+  
+  // Helper function to extract features from description
+  const extractFeaturesFromDescription = (description) => {
+    // Simple extraction of bullet points from description
+    if (!description) return [];
+    
+    // Look for bullet points or numbered lists in the description
+    const lines = description.split(/\n|\r\n/);
+    const features = lines
+      .filter(line => /^[-•*]|\d+\./.test(line.trim())) // Look for bullet points or numbered lists
+      .map(line => line.replace(/^[-•*]|\d+\./, '').trim())
+      .filter(line => line.length > 0);
+    
+    // If no features found but description exists, create a simple feature
+    if (features.length === 0 && description.trim().length > 0) {
+      return [description];
+    }
+    
+    return features;
+  };
+
   // Context value
   const value = {
-    tebexLoaded,
     packages,
     categorizedPackages,
     categories,
@@ -180,8 +281,7 @@ export default function Store() {
   const { 
     categorizedPackages, 
     loading, 
-    error, 
-    tebexLoaded,
+    error,
     categories
   } = useStore();
   
@@ -190,26 +290,6 @@ export default function Store() {
   
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [animating, setAnimating] = useState(false);
-
-  // Package purchase state
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [username, setUsername] = useState('');
-  const [edition, setEdition] = useState('java');
-  const [purchaseError, setPurchaseError] = useState(null);
-  const [processingPayment, setProcessingPayment] = useState(false);
-
-  // Load purchased items from localStorage
-  const [purchasedItems, setPurchasedItems] = useState(() => {
-    try {
-      const savedPurchases = localStorage.getItem('purchases');
-      return savedPurchases ? JSON.parse(savedPurchases) : [];
-    } catch (e) {
-      console.error('Error loading purchases from localStorage:', e);
-      return [];
-    }
-  });
 
   // Handle category change with animation
   const handleCategoryChange = (category) => {
@@ -224,162 +304,74 @@ export default function Store() {
     }, 300);
   };
 
-  // Check if a package has been purchased
-  const isPackagePurchased = (packageId) => {
-    return purchasedItems.some(purchase => 
-      purchase.packageId === packageId && 
-      purchase.verified === true
-    );
-  };
-
-  // Handle purchase button click
-  const handlePurchaseClick = (pkg) => {
-    // Reset any previous errors
-    setPurchaseError(null);
-    setSelectedPackage(pkg);
-    
-    // Check if there's a store error indicating payment system is unavailable
-    if (error && error.includes && error.includes('Payment system')) {
-      setPurchaseError('Payment system is not available at this time. Please try again later.');
-      return;
-    }
-    
-    // Check if user is already logged in (stored in localStorage)
-    const savedUsername = localStorage.getItem('minecraft_username');
-    const savedEdition = localStorage.getItem('minecraft_edition');
-    
-    if (savedUsername && savedEdition) {
-      setUsername(savedUsername);
-      setEdition(savedEdition);
-      setShowPaymentDialog(true);
-    } else {
-      setShowLoginModal(true);
-    }
-  };
-  
-  // Handle successful login
-  const handleLoginSuccess = (data) => {
-    setUsername(data.username);
-    setEdition(data.edition);
-    setShowLoginModal(false);
-    
-    // Save the username and edition to localStorage
-    localStorage.setItem('minecraft_username', data.username);
-    localStorage.setItem('minecraft_edition', data.edition);
-    
-    // Open payment dialog
-    setShowPaymentDialog(true);
-  };
-  
-  // Handle successful payment
-  const handlePaymentSuccess = () => {
-    setProcessingPayment(true);
-    
-    // Create a new purchase record
-    const newPurchase = {
-      packageId: selectedPackage.id,
-      packageName: selectedPackage.name,
-      username,
-      edition,
-      timestamp: new Date().toISOString(),
-      verified: true  // This should ideally be verified by the server
+  // Handle add to cart
+  const handleAddToCart = (pkg) => {
+    // Format the package data for the cart
+    const cartItem = {
+      id: pkg.id,
+      name: pkg.name,
+      price: pkg.price,
+      image: pkg.image || null,
+      description: pkg.description || ''
     };
     
-    // Update local state
-    setPurchasedItems(prevItems => [...prevItems, newPurchase]);
-    
-    // Save purchase to localStorage
-    try {
-      const existingPurchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-      localStorage.setItem('purchases', JSON.stringify([...existingPurchases, newPurchase]));
-    } catch (e) {
-      console.error('Error saving purchase to localStorage:', e);
-    }
-    
-    setShowPaymentDialog(false);
-    setProcessingPayment(false);
-    
-    // Show success notification
-    // alert(`Thank you for your purchase! Your package "${selectedPackage.name}" has been activated for ${username}.`);
-  };
-  
-  // Handle payment errors
-  const handlePaymentError = (error) => {
-    console.error('Payment error:', error);
-    setPurchaseError('There was an issue processing your payment. Please try again.');
-    setProcessingPayment(false);
+    addToCart(cartItem);
   };
 
   // Render a package card
   const renderPackageCard = (pkg) => {
-    const isPurchased = isPackagePurchased(pkg.id);
     const isPackageInCart = isInCart(pkg.id);
     
     return (
-      <div key={pkg.id} className="package-card relative bg-[#1D1E29] rounded-lg shadow-lg p-6 border border-gray-800 hover:border-blue-500 transition-all duration-300">
+      <div key={pkg.id} className="package-card relative bg-slate-900 rounded-lg shadow-lg p-6 border border-slate-800 hover:border-purple-500 transition-all duration-300">
         {pkg.popular && (
           <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
             POPULAR
           </div>
         )}
         
-        <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-        <p className="text-gray-400 mb-4">{pkg.description}</p>
+        {pkg.image && (
+          <div className="mb-4">
+            <img 
+              src={pkg.image} 
+              alt={pkg.name} 
+              className="w-full h-48 object-cover rounded-md"
+            />
+          </div>
+        )}
         
-        <div className="text-3xl font-bold text-purple-600 mb-6">
+        <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
+        <p className="text-gray-400 mb-4 text-sm">{pkg.description}</p>
+        
+        <div className="text-2xl font-bold text-purple-500 mb-6">
           {pkg.price}
         </div>
         
         <ul className="mb-6 space-y-2">
-          {pkg.features.map((feature, index) => (
+          {pkg.features && pkg.features.map((feature, index) => (
             <li key={index} className="flex items-start">
               <FiCheck className="text-green-500 mt-1 mr-2 flex-shrink-0" />
-              <span className="text-gray-300">{feature}</span>
+              <span className="text-gray-300 text-sm">{feature}</span>
             </li>
           ))}
         </ul>
         
-        {purchaseError && selectedPackage && selectedPackage.id === pkg.id && (
-          <div className="text-red-500 text-sm mb-2 flex items-center">
-            <FiAlertCircle className="mr-1" />
-            {purchaseError}
-          </div>
-        )}
-        
-        {isPurchased ? (
-          <button
-            disabled
-            className="w-full py-3 px-4 rounded-md font-medium flex items-center justify-center bg-green-500 text-white"
-          >
-            <FiCheck className="mr-2" />
-            Purchased
-          </button>
-        ) : isPackageInCart ? (
+        {isPackageInCart ? (
           <div className="flex gap-2">
             <button
               onClick={openCart}
-              className="flex-1 py-3 px-4 rounded-md font-medium flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              className="flex-1 py-2 px-4 rounded-md font-medium flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-white transition-colors"
             >
               <FiShoppingCart className="mr-2" />
               View Cart
             </button>
-            <button
-              onClick={() => handlePurchaseClick(pkg)}
-              disabled={loading || !tebexLoaded || processingPayment}
-              className={`flex-1 py-3 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
-                (!tebexLoaded || loading || processingPayment) ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              <FiDollarSign className="mr-2" />
-              Buy Now
-            </button>
           </div>
         ) : (
           <button
-            onClick={() => addToCart(pkg)}
-            disabled={loading || !tebexLoaded}
-            className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
-              (!tebexLoaded || loading) ? 'opacity-50 cursor-not-allowed' : ''
+            onClick={() => handleAddToCart(pkg)}
+            disabled={loading}
+            className={`w-full py-2 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             <FiPlus className="mr-2" />
@@ -404,7 +396,7 @@ export default function Store() {
     return (
       <div className="mb-10">
         <div className="flex items-center mb-4">
-          <FiFilter className="mr-2 text-blue-400" />
+          <FiFilter className="mr-2 text-purple-400" />
           <h2 className="text-lg font-medium text-white">Filter by Category</h2>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -412,8 +404,8 @@ export default function Store() {
             onClick={() => handleCategoryChange('all')}
             className={`category-btn px-4 py-2 rounded-md transition-all duration-300 ${
               selectedCategory === 'all'
-                ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+                ? 'bg-purple-600 text-white shadow-lg transform scale-105'
+                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
             }`}
           >
             <div className="flex items-center">
@@ -429,13 +421,13 @@ export default function Store() {
                 onClick={() => handleCategoryChange(category.id)}
                 className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
                   selectedCategory === category.id
-                    ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                    : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+                    ? 'bg-purple-600 text-white shadow-lg transform scale-105'
+                    : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
                 }`}
               >
                 {getCategoryIcon(category.id)}
                 {category.name}
-                <span className="ml-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full">
+                <span className="ml-2 bg-slate-700 text-white text-xs px-2 py-0.5 rounded-full">
                   {category.packages.length}
                 </span>
               </button>
@@ -447,13 +439,13 @@ export default function Store() {
               onClick={() => handleCategoryChange('uncategorized')}
               className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
                 selectedCategory === 'uncategorized'
-                  ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                  : 'bg-[#1D1E29] text-gray-300 hover:bg-[#282A3A] border border-gray-700 hover:border-blue-400'
+                  ? 'bg-purple-600 text-white shadow-lg transform scale-105'
+                  : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
               }`}
             >
               <FiPackage className="mr-2 text-gray-400" />
               Other Packages
-              <span className="ml-2 bg-gray-700 text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="ml-2 bg-slate-700 text-white text-xs px-2 py-0.5 rounded-full">
                 {categorizedPackages.uncategorized.packages.length}
               </span>
         </button>
@@ -553,7 +545,7 @@ export default function Store() {
             .loader {
               border: 3px solid rgba(255, 255, 255, 0.1);
               border-radius: 50%;
-              border-top: 3px solid #3ABCFD;
+              border-top: 3px solid #8B5CF6;
               width: 24px;
               height: 24px;
               animation: loaderSpin 0.8s linear infinite;
@@ -569,7 +561,7 @@ export default function Store() {
             }
             
             .category-btn:hover {
-              box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+              box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
             }
             
             .package-card {
@@ -586,18 +578,18 @@ export default function Store() {
 
         <div className="mb-16 flex items-center">
           <div className="flex items-center gap-3">
-          <div className="bg-[#3ABCFD] rounded-full w-12 h-12 flex items-center justify-center">
+          <div className="bg-purple-600 rounded-full w-12 h-12 flex items-center justify-center">
             <FiShoppingCart className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Store</h1>
-              <div className="w-6 h-1 bg-blue-500 mt-1"></div>
-            </div>
+            <div className="w-6 h-1 bg-purple-500 mt-1"></div>
+          </div>
           </div>
         </div>
         
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 max-w-2xl mx-auto">
+        <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded mb-6 max-w-2xl mx-auto">
           <p className="font-bold">Error loading store</p>
           <p>{error}</p>
         </div>
@@ -622,7 +614,7 @@ export default function Store() {
         </div>
       )}
 
-      <div className="mt-16 bg-[#1D1E29] p-6 rounded-lg shadow-md max-w-3xl mx-auto border border-gray-800">
+      <div className="mt-16 bg-slate-900 p-6 rounded-lg shadow-md max-w-3xl mx-auto border border-slate-800">
         <h2 className="text-2xl font-bold mb-4 flex items-center text-white">
           <FiDollarSign className="mr-2 text-purple-500" />
           Need a custom package?
@@ -641,26 +633,6 @@ export default function Store() {
         </a>
       </div>
 
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-      
-      {/* Payment Dialog - rendered outside cards at the root level */}
-      {selectedPackage && (
-        <PaymentDialog
-          isOpen={showPaymentDialog}
-          onClose={() => setShowPaymentDialog(false)}
-          packageDetails={selectedPackage}
-          username={username}
-          edition={edition}
-          onPaymentSuccess={handlePaymentSuccess}
-          onPaymentError={handlePaymentError}
-        />
-      )}
-
       {/* Cart button with count */}
       <div className="fixed bottom-8 right-8 z-30">
         <button
@@ -670,12 +642,15 @@ export default function Store() {
         >
           <FiShoppingCart size={24} />
           {getCartItemCount() > 0 && (
-            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-purple-800 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
               {getCartItemCount()}
             </span>
           )}
         </button>
       </div>
+      
+      {/* Cart Modal */}
+      <CartModal />
     </div>
   );
 }

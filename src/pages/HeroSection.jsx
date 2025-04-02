@@ -200,69 +200,72 @@ export default function OriginMC() {
 
         {/* Mobile Dropdown Menu */}
         <div className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-          onClick={toggleMenu}>
-        </div>
-        
-        {/* Sidebar */}
-        <div
-          ref={menuRef}
-          className={`fixed top-0 left-0 w-3/4 max-w-xs md:hidden bg-[#1a1b26] border-r border-blue-800/30 shadow-lg z-50 h-full overflow-auto pt-20 pb-6 transition-transform duration-300 ease-in-out ${
-            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <div className="flex flex-col w-full">
-            <NavLink
-              to="/"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-              end
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Home</div>
-            </NavLink>
-            <NavLink
-              to="/blog"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Blog</div>
-            </NavLink>
-            <NavLink
-              to="/vote"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Vote</div>
-            </NavLink>
-            <NavLink
-              to="/originpass"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Origins Pass</div>
-            </NavLink>
-            <NavLink
-              to="/store"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Store</div>
-            </NavLink>
-            <NavLink
-              to="/rules"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3 border-b border-gray-800/50">Rules</div>
-            </NavLink>
-            <NavLink
-              to="/pvpingmc"
-              className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
-              onClick={toggleMenu}
-            >
-              <div className="px-4 py-3">PvPingMC</div>
-            </NavLink>
-          </div>
-        </div>
+  onClick={toggleMenu}>
+</div>
+
+{/* Modified Top-down Sidebar */}
+<div
+  ref={menuRef}
+  className={`fixed top-0 left-0 w-full md:hidden z-50 h-auto overflow-auto transition-transform duration-300 ease-in-out ${
+    isMenuOpen ? 'translate-y-0' : '-translate-y-full'
+  }`}
+>
+  <div className="max-w-[70%] mx-auto bg-[#1a1b26] shadow-lg rounded-b-xl border-b border-blue-800/30">
+    {/* Text Container with Different Background */}
+    <div className="bg-[#13141d] rounded-b-xl p-4 space-y-2">
+      <NavLink
+        to="/"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+        end
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Home</div>
+      </NavLink>
+      <NavLink
+        to="/blog"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Blog</div>
+      </NavLink>
+      <NavLink
+        to="/vote"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Vote</div>
+      </NavLink>
+      <NavLink
+        to="/originpass"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Origins Pass</div>
+      </NavLink>
+      <NavLink
+        to="/store"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Store</div>
+      </NavLink>
+      <NavLink
+        to="/rules"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">Rules</div>
+      </NavLink>
+      <NavLink
+        to="/pvpingmc"
+        className={({isActive}) => isActive ? mobileActiveClass : mobileInactiveClass}
+        onClick={toggleMenu}
+      >
+        <div className="px-4 py-3 rounded-lg hover:bg-[#1a1b26] transition-colors no-underline">PvPingMC</div>
+      </NavLink>
+    </div>
+  </div>
+</div>
       </nav>
 
       {/* Hero Section - Only shown on home page */}

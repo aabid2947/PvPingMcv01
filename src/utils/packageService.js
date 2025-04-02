@@ -49,35 +49,38 @@ export async function fetchCategories() {
 
 /**
  * Sort packages into their respective categories
- * @param {Array} packages - Array of package objects
+ * @param {Array|Object} packages - Array of package objects or object with data property
  * @param {Array} categories - Array of category objects
  * @returns {Object} Object with categorized packages
  */
 export function categorizePackages(packages = [], categories = []) {
-  // Guard against null/undefined inputs
-  if (!packages) packages = [];
-  if (!categories) categories = [];
+  // Extract packages array from different possible data formats
+  let packageArray = [];
   
-  // If no packages exist, return empty categories
-  if (packages.length === 0) {
-    return {
-      uncategorized: {
-        id: 'uncategorized',
-        name: 'All Packages',
-        description: 'All available packages',
-        packages: []
-      }
-    };
+  if (packages) {
+    // Handle API response format with data property
+    if (packages.data && Array.isArray(packages.data)) {
+      packageArray = packages.data;
+    } 
+    // Handle direct array
+    else if (Array.isArray(packages)) {
+      packageArray = packages;
+    }
+    // Log warning if packages is in an unexpected format
+    else {
+      console.warn('Unexpected packages format in categorizePackages:', packages);
+      packageArray = [];
+    }
   }
-
+  
   // If no categories exist, return all packages as uncategorized
-  if (categories.length === 0) {
+  if (!categories || categories.length === 0) {
     return {
       uncategorized: {
         id: 'uncategorized',
         name: 'All Packages',
         description: 'All available packages',
-        packages: packages
+        packages: packageArray
       }
     };
   }
@@ -100,7 +103,7 @@ export function categorizePackages(packages = [], categories = []) {
   };
   
   // Sort packages into their categories
-  packages.forEach(pkg => {
+  packageArray.forEach(pkg => {
     let categorized = false;
     
     // Skip packages without IDs
