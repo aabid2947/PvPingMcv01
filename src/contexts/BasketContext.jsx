@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useCart } from './CartContext';
 import * as tebexService from '../utils/tebexHeadlessService';
+import { useUser } from '../context/UserContext';
 
 const BasketContext = createContext();
 
@@ -10,6 +11,7 @@ export function useBasket() {
 
 export function BasketProvider({ children }) {
   const { cart, clearCart } = useCart();
+  const { username } = useUser();
   
   const [basketIdent, setBasketIdent] = useState(null);
   const [basketData, setBasketData] = useState(null);
@@ -147,8 +149,34 @@ export function BasketProvider({ children }) {
     }
   };
   
+  // Get authentication links for a basket
+  const getBasketAuthLinks = async (returnUrl) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!basketIdent) {
+        throw new Error('No basket identifier available');
+      }
+      
+      const response = await tebexService.getBasketAuthLinks(basketIdent, returnUrl);
+      
+      if (response && Array.isArray(response)) {
+        return response;
+      } else {
+        throw new Error('Failed to get basket auth links');
+      }
+    } catch (error) {
+      console.error('Error getting basket auth links:', error);
+      setError(error.message || 'Failed to get authentication links');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   // Add items from cart to basket and proceed to checkout
-  const checkoutCart = async (username, edition) => {
+  const checkoutCart = async (minecraftUsername, edition = 'java') => {
     if (!cart || cart.length === 0) {
       console.error('Cannot checkout empty cart');
       setError('Your cart is empty');
@@ -159,47 +187,41 @@ export function BasketProvider({ children }) {
       setIsProcessingCheckout(true);
       setError(null);
       
-      console.log(`Processing checkout for ${username} (${edition})`);
+      const formattedUsername = edition === 'bedrock' ? `.${minecraftUsername}` : minecraftUsername;
+      console.log(`Processing checkout for ${formattedUsername} (${edition})`);
       
-      // 1. Create items array in the format expected by the API
-      const items = cart.map(item => ({
-        id: item.id,
-        quantity: 1
-      }));
-      
-      // 2. Process checkout with items
-      const result = await tebexService.processCheckout(
-        basketIdent || null,
-        username,
-        edition,
-        items
-      );
-      
-      console.log('Checkout result:', result);
-      
-      // 3. Handle checkout result
-      if (!result) {
-        throw new Error('No response from checkout service');
+      // 1. Create or get existing basket
+      const currentBasketIdent = await getOrCreateBasket();
+      if (!currentBasketIdent) {
+        throw new Error('Failed to create or get basket');
       }
       
-      // Check for URL in different potential locations
-      // This handles both the old and new API response formats
-      const checkoutUrl = result.url || result.checkoutUrl;
-      
-      if (!checkoutUrl) {
-        console.error('No checkout URL found in response:', result);
-        throw new Error('Invalid checkout response - missing URL');
+      // 2. Add all items from cart to basket
+      for (const item of cart) {
+        await addPackageToBasket(item.id, 1);
       }
       
-      // Set checkout URL for redirection
-      setCheckoutUrl(checkoutUrl);
+      // 3. Get the return URL (current page)
+      const returnUrl = window.location.href;
       
-      // If this is a development mode checkout, keep track of that
-      if (result.development_mode) {
-        setDevelopmentCheckout(true);
+      // 4. Get auth links for the basket
+      const authLinks = await getBasketAuthLinks(returnUrl);
+      
+      if (!authLinks || authLinks.length === 0) {
+        throw new Error('Failed to get authentication links for checkout');
       }
       
-      // Clear the cart after successful checkout
+      // 5. Use the first auth link (usually there's only one)
+      const checkoutLink = authLinks[0]?.url;
+      
+      if (!checkoutLink) {
+        throw new Error('No valid checkout URL found');
+      }
+      
+      // Set the checkout URL for redirection
+      setCheckoutUrl(checkoutLink);
+      
+      // Clear the cart after successful checkout preparation
       clearCart();
       
       return true;
@@ -248,32 +270,28 @@ export function BasketProvider({ children }) {
       setIsLoading(true);
       setError(null);
       
+      // Clear any checkout URL
+      setCheckoutUrl(null);
+      
       // Remove from localStorage
-      try {
-        localStorage.removeItem('tebexBasketIdent');
-      } catch (e) {
-        console.error('Error removing basket from localStorage:', e);
-      }
+      localStorage.removeItem('tebexBasketIdent');
       
       // Reset state
       setBasketIdent(null);
       setBasketData(null);
-      setCheckoutUrl(null);
       
-      // Don't automatically create a new basket here
-      // Instead, let getOrCreateBasket handle this when needed
-      
-      return null;
+      // Create a new basket
+      return await initializeBasket();
     } catch (error) {
       console.error('Error resetting basket:', error);
-      setError(error.message || 'Failed to reset basket');
+      setError('Failed to reset basket');
       return null;
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Value object for the context
+  // Value to be provided by context
   const value = {
     basketIdent,
     basketData,
@@ -288,7 +306,8 @@ export function BasketProvider({ children }) {
     addPackageToBasket,
     checkoutCart,
     applyCoupon,
-    resetBasket
+    resetBasket,
+    getBasketAuthLinks
   };
   
   return (

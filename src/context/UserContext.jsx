@@ -53,6 +53,9 @@ export const UserProvider = ({ children }) => {
   const login = (minecraftUsername) => {
     setUsername(minecraftUsername);
     setIsLoggedIn(true);
+    
+    // Immediately save to localStorage for better persistence across page refreshes
+    localStorage.setItem('minecraft_username', minecraftUsername);
   };
   
   // Logout function

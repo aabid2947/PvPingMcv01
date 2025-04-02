@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useBasket } from '../contexts/BasketContext';
+import { useUser } from '../context/UserContext';
 import { X, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function CheckoutModal({ isOpen, onClose }) {
   const { cart, getCartTotal } = useCart();
+  const { username: savedUsername, login } = useUser();
   const { 
     isLoading, 
     error, 
@@ -15,7 +17,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
     developmentCheckout
   } = useBasket();
   
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(savedUsername || '');
   const [edition, setEdition] = useState('java');
   const [formErrors, setFormErrors] = useState({});
   const [checkoutComplete, setCheckoutComplete] = useState(false);
@@ -23,12 +25,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
   // Reset form state when modal is opened
   useEffect(() => {
     if (isOpen) {
-      setUsername('');
+      setUsername(savedUsername || '');
       setEdition('java');
       setFormErrors({});
       setCheckoutComplete(false);
     }
-  }, [isOpen]);
+  }, [isOpen, savedUsername]);
   
   // Function to clear form fields and state
   const clearForm = () => {
@@ -125,6 +127,11 @@ export default function CheckoutModal({ isOpen, onClose }) {
       return;
     }
     
+    // Save the username to UserContext if it's not already saved
+    if (!savedUsername || savedUsername !== username) {
+      login(username);
+    }
+    
     await checkoutCart(username, edition);
   };
   
@@ -198,103 +205,99 @@ export default function CheckoutModal({ isOpen, onClose }) {
             <>
               {/* Cart summary */}
               <div className="bg-slate-800 rounded-md p-4">
-                <h3 className="text-md font-medium text-white mb-2">Order Summary</h3>
+                <h3 className="text-lg font-medium text-white mb-2">Order Summary</h3>
                 <div className="space-y-2">
-                  {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between">
-                      <span className="text-neutral-300">{item.name}</span>
-                      <span className="text-neutral-300">{item.price}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between pt-2 border-t border-neutral-700">
-                    <span className="font-medium text-white">Total</span>
-                    <span className="font-medium text-white">${getCartTotal()}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Items ({cart.length}):</span>
+                    <span className="text-white">${getCartTotal()}</span>
+                  </div>
+                  {/* You could add tax, discounts, etc. here */}
+                  <div className="flex justify-between font-bold border-t border-gray-700 pt-2 mt-2">
+                    <span className="text-white">Total:</span>
+                    <span className="text-purple-500">${getCartTotal()}</span>
                   </div>
                 </div>
               </div>
               
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-md p-3 flex items-start">
+                  <AlertCircle size={20} className="text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-200">{error}</p>
+                </div>
+              )}
+              
               {/* Checkout form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error display */}
-                {error && (
-                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
-                    <p className="font-bold">Error</p>
-                    <p>{error}</p>
-                  </div>
-                )}
-                
-                {/* Username field */}
-                <div className="space-y-1">
-                  <label htmlFor="username" className="block text-sm font-medium text-neutral-300">
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-1">
                     Minecraft Username
                   </label>
                   <input
                     type="text"
-                    id="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    className={`w-full px-3 py-2 bg-slate-800 border ${
+                      formErrors.username ? 'border-red-500' : 'border-gray-700'
+                    } rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     placeholder="Enter your Minecraft username"
-                    className={`w-full px-3 py-2 bg-slate-800 text-white rounded-md border ${
-                      formErrors.username ? 'border-red-500' : 'border-neutral-700'
-                    } focus:outline-none focus:ring-1 focus:ring-purple-500`}
                     disabled={isProcessingCheckout}
                   />
                   {formErrors.username && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.username}</p>
+                    <p className="mt-1 text-sm text-red-500">{formErrors.username}</p>
                   )}
                 </div>
                 
-                {/* Minecraft Edition selection */}
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-neutral-300">
+                <div>
+                  <label className="block text-gray-300 text-sm font-medium mb-1">
                     Minecraft Edition
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEdition('java')}
-                      className={`px-4 py-2 rounded-md text-center transition-colors ${
-                        edition === 'java'
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-slate-800 text-neutral-300 hover:bg-slate-700'
-                      }`}
-                      disabled={isProcessingCheckout}
-                    >
-                      Java Edition
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEdition('bedrock')}
-                      className={`px-4 py-2 rounded-md text-center transition-colors ${
-                        edition === 'bedrock'
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-slate-800 text-neutral-300 hover:bg-slate-700'
-                      }`}
-                      disabled={isProcessingCheckout}
-                    >
-                      Bedrock Edition
-                    </button>
+                  <div className="flex space-x-4">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio text-purple-600"
+                        name="edition"
+                        value="java"
+                        checked={edition === 'java'}
+                        onChange={() => setEdition('java')}
+                        disabled={isProcessingCheckout}
+                      />
+                      <span className="ml-2 text-white">Java</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        className="form-radio text-purple-600"
+                        name="edition"
+                        value="bedrock"
+                        checked={edition === 'bedrock'}
+                        onChange={() => setEdition('bedrock')}
+                        disabled={isProcessingCheckout}
+                      />
+                      <span className="ml-2 text-white">Bedrock</span>
+                    </label>
                   </div>
                   {formErrors.edition && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.edition}</p>
+                    <p className="mt-1 text-sm text-red-500">{formErrors.edition}</p>
                   )}
                 </div>
                 
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  disabled={isProcessingCheckout || isLoading}
-                >
-                  {isProcessingCheckout ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <span>Proceed to Payment</span>
-                  )}
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isProcessingCheckout}
+                  >
+                    {isProcessingCheckout ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Proceed to Payment'
+                    )}
+                  </button>
+                </div>
               </form>
             </>
           )}

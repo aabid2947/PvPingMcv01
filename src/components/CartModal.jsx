@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { FiX, FiShoppingCart, FiTrash2, FiArrowRight } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiX, FiShoppingCart, FiTrash2, FiArrowRight, FiCheck } from 'react-icons/fi';
 import { useCart } from '../contexts/CartContext';
+import { useUser } from '../context/UserContext';
 import CheckoutModal from './CheckoutModal';
 
 function CartModal() {
@@ -14,7 +15,24 @@ function CartModal() {
     getCartItemCount 
   } = useCart();
   
+  const { username } = useUser();
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  
+  // Check if user just logged in based on URL parameter
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const justLoggedInParam = queryParams.get('just_logged_in');
+    
+    if (justLoggedInParam === 'true') {
+      setJustLoggedIn(true);
+      
+      // Clear the parameter after a delay
+      setTimeout(() => {
+        setJustLoggedIn(false);
+      }, 5000);
+    }
+  }, []);
   
   // Handle click outside modal to close it
   const handleOutsideClick = (e) => {
@@ -63,6 +81,25 @@ function CartModal() {
           </div>
           
           <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+            {/* Welcome message for just logged in users */}
+            {justLoggedIn && username && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <FiCheck className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-green-400">
+                      Welcome, {username}!
+                    </h3>
+                    <div className="mt-1 text-sm text-gray-300">
+                      <p>Your Minecraft username has been saved. You're ready to shop!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {cart.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center">
                 <FiShoppingCart size={48} className="text-gray-500 mb-4" />

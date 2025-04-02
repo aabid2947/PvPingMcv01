@@ -187,7 +187,7 @@ export const createBasket = async (completeUrl, cancelUrl) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create basket: ${response.status}`);
+      throw new Error(`Failed to create basket: ${response}`);
     }
     return await response.json();
   } catch (error) {
@@ -294,9 +294,9 @@ export const getBasket = async (basketIdent) => {
  */
 export const getBasketAuthLinks = async (basketIdent, returnUrl) => {
   try {
-    if (isDevelopment) {
-      return getMockAuthLinks();
-    }
+    // if (isDevelopment) {
+    //   return getMockAuthLinks();
+    // }
 
     const response = await fetch(
       `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}/auth?returnUrl=${encodeURIComponent(returnUrl)}`

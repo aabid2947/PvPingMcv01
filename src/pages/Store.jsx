@@ -4,7 +4,9 @@ import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGri
 import { fetchCategories, categorizePackages } from '../utils/packageService';
 import * as tebexHeadlessService from '../utils/tebexHeadlessService';
 import { useCart } from '../contexts/CartContext';
+import { useUser } from '../context/UserContext';
 import CartModal from '../components/CartModal';
+import LoginModal from '../components/LoginModal';
 
 // Create context for store data
 export const StoreContext = createContext();
@@ -17,6 +19,28 @@ export function StoreProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categoryRefreshTimestamp, setCategoryRefreshTimestamp] = useState(Date.now());
+
+  // Load store categories from JSON file
+  useEffect(() => {
+    const loadStoreCategories = async () => {
+      try {
+        const response = await fetch('/store-categories.json');
+        if (!response.ok) {
+          throw new Error('Failed to load store categories');
+        }
+        
+        const data = await response.json();
+        if (data && data.categories) {
+          setCategories(data.categories);
+        }
+      } catch (error) {
+        console.error('Error loading store categories:', error);
+        setError('Failed to load store categories');
+      }
+    };
+    
+    loadStoreCategories();
+  }, []);
 
   // Load packages and categories when component mounts
   useEffect(() => {
@@ -302,8 +326,32 @@ export default function Store() {
   // Cart context
   const { addToCart, isInCart, getCartItemCount, openCart } = useCart();
   
+  // User context for checking username
+  const { username, isLoggedIn, login } = useUser();
+  
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [animating, setAnimating] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Check for just-logged-in state based on URL parameter
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const justLoggedIn = queryParams.get('just_logged_in');
+    
+    if (justLoggedIn === 'true') {
+      // Remove the parameter to avoid infinite refreshes
+      const newUrl = window.location.pathname + '?just_logged_in=true';
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Automatically open the cart modal to show the welcome message
+      // Use a short delay to ensure the cart context is fully initialized
+      setTimeout(() => {
+        openCart();
+      }, 500);
+    }
+  }, [openCart]);
 
   // Handle category change with animation
   const handleCategoryChange = (category) => {
@@ -320,6 +368,13 @@ export default function Store() {
 
   // Handle add to cart
   const handleAddToCart = (pkg) => {
+    // If user is not logged in (no username), show login modal first
+    if (!username) {
+      setSelectedPackage(pkg);
+      setShowLoginModal(true);
+      return;
+    }
+    
     // Format the package data for the cart
     const cartItem = {
       id: pkg.id,
@@ -330,6 +385,39 @@ export default function Store() {
     };
     
     addToCart(cartItem);
+  };
+  
+  // Handle login success from the modal
+  const handleLoginSuccess = ({ username: newUsername, edition }) => {
+    // Save username to context
+    login(newUsername);
+    
+    // Close the modal
+    setShowLoginModal(false);
+    
+    // If we had a selected package waiting, add it to cart now
+    if (selectedPackage) {
+      const cartItem = {
+        id: selectedPackage.id,
+        name: selectedPackage.name,
+        price: selectedPackage.price,
+        image: selectedPackage.image || null,
+        description: selectedPackage.description || ''
+      };
+      
+      // Add item to cart
+      addToCart(cartItem);
+      
+      // Clear the selected package
+      setSelectedPackage(null);
+      
+      // Show refreshing state
+      setIsRefreshing(true);
+      
+      // Force a complete page refresh to ensure all contexts are properly updated
+      // Add a parameter to the URL to indicate this is a post-login refresh
+      window.location.href = window.location.pathname + '?just_logged_in=true';
+    }
   };
 
   // Render a package card
@@ -397,274 +485,153 @@ export default function Store() {
   };
 
   // Get all categories for navigation
-  const getCategoryButtons = () => {
-    if (!categorizedPackages || Object.keys(categorizedPackages).length === 0) {
-      return null;
-    }
-
-    // If only one category exists and it's "uncategorized", don't show category filters
-    if (Object.keys(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
-      return null;
-    }
-
-    return (
-      <div className="mb-10">
-        <div className="flex items-center mb-4">
-          <FiFilter className="mr-2 text-purple-400" />
-          <h2 className="text-lg font-medium text-white">Filter by Category</h2>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => handleCategoryChange('all')}
-            className={`category-btn px-4 py-2 rounded-md transition-all duration-300 ${
-              selectedCategory === 'all'
-                ? 'bg-purple-600 text-white shadow-lg transform scale-105'
-                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
-            }`}
-          >
-            <div className="flex items-center">
-              <FiGrid className="mr-2" />
-              All Packages
-            </div>
-          </button>
+  const getCategories = () => {
+    // Start with the "all" category
+    const allCategories = [
+      {
+        id: 'all',
+        name: 'All Packages',
+        description: 'View all available packages'
+      }
+    ];
+    
+    // Add other categories from the categorizedPackages
+    if (categorizedPackages) {
+      Object.values(categorizedPackages)
+        .sort((a, b) => {
+          // Sort by order if available, otherwise alphabetically
+          const orderA = a.order || 999;
+          const orderB = b.order || 999;
           
-          {Object.values(categorizedPackages).map((category) => (
-            category.id !== 'uncategorized' && category.packages && category.packages.length > 0 && (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryChange(category.id)}
-                className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
-                  selectedCategory === category.id
-                    ? 'bg-purple-600 text-white shadow-lg transform scale-105'
-                    : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
-                }`}
-              >
-                {getCategoryIcon(category.id)}
-                {category.name}
-                <span className="ml-2 bg-slate-700 text-white text-xs px-2 py-0.5 rounded-full">
-                  {category.packages.length}
-                </span>
-              </button>
-            )
-          ))}
-          
-          {categorizedPackages.uncategorized && categorizedPackages.uncategorized.packages && categorizedPackages.uncategorized.packages.length > 0 && (
-            <button
-              onClick={() => handleCategoryChange('uncategorized')}
-              className={`category-btn px-4 py-2 rounded-md transition-all duration-300 flex items-center ${
-                selectedCategory === 'uncategorized'
-                  ? 'bg-purple-600 text-white shadow-lg transform scale-105'
-                  : 'bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700 hover:border-purple-400'
-              }`}
-            >
-              <FiPackage className="mr-2 text-gray-400" />
-              Other Packages
-              <span className="ml-2 bg-slate-700 text-white text-xs px-2 py-0.5 rounded-full">
-                {categorizedPackages.uncategorized.packages.length}
-              </span>
-        </button>
-          )}
-      </div>
-    </div>
-  );
-};
-
-  // Filter packages based on selected category
-  const getFilteredPackages = () => {
-    // If no packages exist yet
-    if (!categorizedPackages || Object.keys(categorizedPackages).length === 0) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-400">No packages available</p>
-        </div>
-      );
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name);
+        })
+        .forEach(category => {
+          if (category.id !== 'uncategorized') {
+            allCategories.push(category);
+          }
+        });
     }
+    
+    return allCategories;
+  };
 
+  // Get packages to display based on selected category
+  const getPackagesToDisplay = () => {
     if (selectedCategory === 'all') {
-      // Case 1: Only uncategorized packages and nothing else
-      if (Object.keys(categorizedPackages).length === 1 && Object.keys(categorizedPackages)[0] === 'uncategorized') {
-        // If the packages are in the uncategorized category but it's the only one, show them without the category header
-        return (
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
-            {categorizedPackages.uncategorized.packages.map(renderPackageCard)}
-          </div>
-        );
-      } else {
-        // Case 2: Regular category display
-        return (
-          <div className={`transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
-            {Object.values(categorizedPackages).map((category) => (
-              category.packages && category.packages.length > 0 && (
-                <div key={category.id} className="mb-12">
-                  <div className="flex items-center mb-6">
-                    {getCategoryIcon(category.id)}
-                    <h2 className="text-2xl font-bold text-white">
-                      {category.name}
-                    </h2>
-                  </div>
-                  {category.description && (
-                    <p className="text-gray-400 mb-6">{category.description}</p>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {category.packages.map(renderPackageCard)}
-                  </div>
-                </div>
-              )
-            ))}
-          </div>
-        );
+      // Get all packages from all categories
+      let allPackages = [];
+      
+      if (categorizedPackages) {
+        Object.values(categorizedPackages).forEach(category => {
+          if (category.packages && Array.isArray(category.packages)) {
+            allPackages = [...allPackages, ...category.packages];
+          }
+        });
       }
-    } else {
-      // Case 3: Single selected category
-      const selectedCategoryData = categorizedPackages[selectedCategory];
-      if (!selectedCategoryData || !selectedCategoryData.packages || selectedCategoryData.packages.length === 0) {
-        return (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No packages available in this category</p>
-          </div>
-        );
-      }
-
-      return (
-        <div className={`mb-12 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="flex items-center mb-6">
-            {getCategoryIcon(selectedCategoryData.id)}
-            <h2 className="text-2xl font-bold text-white">
-              {selectedCategoryData.name}
-            </h2>
-          </div>
-          {selectedCategoryData.description && (
-            <p className="text-gray-400 mb-6">{selectedCategoryData.description}</p>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {selectedCategoryData.packages.map(renderPackageCard)}
-          </div>
-        </div>
-      );
+      
+      return allPackages;
     }
+    
+    // Return packages from the selected category
+    return categorizedPackages[selectedCategory]?.packages || [];
   };
 
   return (
-    <div className="store-page container mx-auto px-4 py-8">
+    <div className="container mx-auto py-12 px-4 sm:px-6 lg:w-4/5">
       <Helmet>
-        <title>Store | PvPing MC</title>
-        <meta name="description" content="Browse and purchase packages for the PvPing Minecraft server." />
-        <style>
-          {`
-            @keyframes loaderSpin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            
-            .loader {
-              border: 3px solid rgba(255, 255, 255, 0.1);
-              border-radius: 50%;
-              border-top: 3px solid #8B5CF6;
-              width: 24px;
-              height: 24px;
-              animation: loaderSpin 0.8s linear infinite;
-            }
-            
-            @keyframes fadeIn {
-              from { opacity: 0; transform: translateY(10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            
-            .category-fade-in {
-              animation: fadeIn 0.5s ease forwards;
-            }
-            
-            .category-btn:hover {
-              box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-            }
-            
-            .package-card {
-              transition: all 0.3s ease;
-            }
-            
-            .package-card:hover {
-              transform: translateY(-5px) scale(1.02);
-              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            }
-          `}
-        </style>
+        <title>Store | PvPingMC</title>
       </Helmet>
 
-        <div className="mb-16 flex items-center">
-          <div className="flex items-center gap-3">
-          <div className="bg-purple-600 rounded-full w-12 h-12 flex items-center justify-center">
-            <FiShoppingCart className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Store</h1>
-            <div className="w-6 h-1 bg-purple-500 mt-1"></div>
-          </div>
-          </div>
-        </div>
-        
-      {error && (
-        <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded mb-6 max-w-2xl mx-auto">
-          <p className="font-bold">Error loading store</p>
-          <p>{error}</p>
+      {/* Page refreshing overlay */}
+      {isRefreshing && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+          <p className="mt-6 text-xl text-white">Refreshing page...</p>
+          <p className="mt-2 text-sm text-gray-300">
+            Please wait while we set up your shopping experience.
+          </p>
         </div>
       )}
 
-      {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="loader"></div>
-          <p className="ml-3 text-gray-300">Loading packages...</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Category Navigation Buttons */}
-          <div className="category-fade-in" style={{ animationDelay: '0.1s' }}>
-            {getCategoryButtons()}
-        </div>
-        
-          {/* Display filtered packages */}
-          <div className="category-fade-in" style={{ animationDelay: '0.3s' }}>
-            {getFilteredPackages()}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-16 bg-slate-900 p-6 rounded-lg shadow-md max-w-3xl mx-auto border border-slate-800">
-        <h2 className="text-2xl font-bold mb-4 flex items-center text-white">
-          <FiDollarSign className="mr-2 text-purple-500" />
-          Need a custom package?
-        </h2>
-        <p className="mb-4 text-gray-300">
-          Looking for something specific or want to customize a package for your needs? 
-          Contact our support team and we'll be happy to help create a custom solution for you.
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-white">PvPingMC Store</h1>
+        <p className="text-gray-400 mt-4 max-w-2xl mx-auto">
+          Support the server and enhance your gameplay with premium packages and perks.
         </p>
-        <a
-          href="https://discord.gg/pvpingmc"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded inline-block transition-colors"
-        >
-          Contact Support
-        </a>
-      </div>
-
-      {/* Cart button with count */}
-      <div className="fixed bottom-8 right-8 z-30">
-        <button
-          onClick={openCart}
-          className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-lg flex items-center justify-center transition-colors relative"
-          aria-label="Open Cart"
-        >
-          <FiShoppingCart size={24} />
-          {getCartItemCount() > 0 && (
-            <span className="absolute -top-2 -right-2 bg-purple-800 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-              {getCartItemCount()}
-            </span>
-          )}
-        </button>
       </div>
       
-      {/* Cart Modal */}
-      <CartModal />
+      {/* Category tabs */}
+      <div className="flex overflow-x-auto pb-2 mb-8 scrollbar-hide">
+        <div className="flex space-x-2">
+          {getCategories().map((category) => (
+            <button
+              key={category.id}
+              onClick={() => handleCategoryChange(category.id)}
+              className={`px-4 py-2 rounded-md whitespace-nowrap flex items-center ${
+                selectedCategory === category.id
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+              }`}
+              aria-current={selectedCategory === category.id ? 'page' : undefined}
+            >
+              {category.id !== 'all' && getCategoryIcon(category.id)}
+              {category.name}
+            </button>
+          ))}
+        </div>
+        </div>
+        
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-900/20 border border-red-900 rounded-md p-4 mb-8">
+          <div className="flex">
+            <FiAlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-red-400">Error loading store</h3>
+              <p className="mt-2 text-sm text-gray-300">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading packages...</p>
+        </div>
+      )}
+      
+      {/* Package grid */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${
+        animating ? 'opacity-0' : 'opacity-100'
+      }`}>
+        {!loading && getPackagesToDisplay().map((pkg) => renderPackageCard(pkg))}
+      </div>
+
+      {/* Empty state */}
+      {!loading && getPackagesToDisplay().length === 0 && !error && (
+        <div className="text-center py-12 bg-slate-800/50 rounded-md">
+          <FiPackage className="mx-auto h-12 w-12 text-gray-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-300">No packages found</h3>
+          <p className="mt-1 text-sm text-gray-400">
+            {selectedCategory === 'all'
+              ? 'There are no packages available at the moment.'
+              : `There are no packages in the selected category.`}
+          </p>
+        </div>
+      )}
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => {
+          setShowLoginModal(false);
+          setSelectedPackage(null);
+        }} 
+        onLoginSuccess={handleLoginSuccess}
+      />
     </div>
   );
 }
