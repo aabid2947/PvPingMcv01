@@ -177,6 +177,22 @@ export function BasketProvider({ children }) {
     }
   };
   
+  // Helper function to force production mode for testing
+  const forceProductionMode = () => {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('force_production', 'true');
+    window.history.replaceState({}, '', currentUrl.toString());
+    console.log('🛠️ Production mode forced for Tebex API calls. Refresh to apply changes.');
+  };
+  
+  // Helper function to reset to development mode
+  const resetToDevelopmentMode = () => {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('force_production');
+    window.history.replaceState({}, '', currentUrl.toString());
+    console.log('🛠️ Development mode restored for Tebex API calls. Refresh to apply changes.');
+  };
+  
   // Add a package to the basket
   const addPackageToBasket = async (packageId, quantity = 1) => {
     if (!packageId) {
@@ -423,7 +439,9 @@ export function BasketProvider({ children }) {
     applyCoupon,
     resetBasket,
     getBasketAuthLinks,
-    syncCartWithBasket
+    syncCartWithBasket,
+    forceProductionMode,
+    resetToDevelopmentMode
   };
   
   return (

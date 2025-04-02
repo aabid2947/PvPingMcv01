@@ -386,8 +386,20 @@ export default function Store() {
   };
 
   // Handle add to cart
-  const handleAddToCart = async (pkg) => {
+  const handleAddToCart = async (pkg, event) => {
     setBasketError(null);
+    
+    // Check if shift key is pressed for debug mode (force production API)
+    if (event && event.shiftKey) {
+      // Only activate in development mode
+      if (process.env.NODE_ENV === 'development' || import.meta.env.DEV) {
+        if (basketContext && basketContext.forceProductionMode) {
+          basketContext.forceProductionMode();
+          alert('Production mode forced for Tebex API calls. Refresh the page to apply changes.');
+          return;
+        }
+      }
+    }
     
     // If user is not logged in (no username), show login modal first
     if (!username) {
@@ -512,7 +524,7 @@ export default function Store() {
           </div>
         ) : (
           <button
-            onClick={() => handleAddToCart(pkg)}
+            onClick={(event) => handleAddToCart(pkg, event)}
             disabled={loading}
             className={`w-full py-2 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
@@ -622,7 +634,7 @@ export default function Store() {
             </button>
           ))}
         </div>
-      </div>
+            </div>
       
       {/* Error messages */}
       {error && (
@@ -632,7 +644,7 @@ export default function Store() {
             <div>
               <h3 className="text-sm font-medium text-red-400">Error loading store</h3>
               <p className="mt-2 text-sm text-gray-300">{error}</p>
-            </div>
+          </div>
           </div>
         </div>
       )}
@@ -644,7 +656,7 @@ export default function Store() {
             <div>
               <h3 className="text-sm font-medium text-red-400">Shopping Cart Error</h3>
               <p className="mt-2 text-sm text-gray-300">{basketError}</p>
-            </div>
+        </div>
           </div>
         </div>
       )}
