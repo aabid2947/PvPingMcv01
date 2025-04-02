@@ -2,6 +2,9 @@
  * Utilities for handling checkout with the Tebex API
  */
 
+// The Tebex Store ID from environment (or fallback)
+const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
+
 /**
  * Create a checkout URL for a cart of items
  * @param {string} username - Minecraft username
@@ -24,7 +27,34 @@ export const createCheckoutUrl = async (username, edition, cart) => {
       throw new Error('Cart must contain at least one item');
     }
     
+    // Format the username based on the edition (same as server-side)
+    const formattedUsername = edition === 'bedrock' ? `.${username}` : username;
+    
     console.log('Creating checkout URL with:', { username, edition, cartItems: cart.length });
+    
+    // Check if we're on a Cloudflare Pages deployment
+    const isCloudflarePages = window.location.hostname.includes('.pages.dev');
+    console.log('Deployment type:', isCloudflarePages ? 'Cloudflare Pages' : 'Other');
+    
+    // For Cloudflare Pages deployments, use direct Tebex checkout URL
+    // This bypasses the serverless function which may not be properly configured
+    if (isCloudflarePages && cart.length > 0) {
+      console.log('Using direct Tebex checkout URL for Cloudflare Pages deployment');
+      
+      // Get the first item from the cart for direct checkout
+      const firstItem = cart[0];
+      
+      // Format the URL according to Tebex docs
+      const directCheckoutUrl = `https://checkout.tebex.io/checkout/${STORE_ID}/${firstItem.id}?username=${encodeURIComponent(formattedUsername)}`;
+      
+      return {
+        packageId: firstItem.id,
+        packageName: firstItem.name,
+        url: directCheckoutUrl,
+        expires: new Date(Date.now() + 3600000).toISOString(), // 1 hour expiry
+        isDirectCheckout: true
+      };
+    }
     
     // Call our server API to generate checkout URL
     const response = await fetch('/api/tebex/checkout', {
@@ -38,9 +68,27 @@ export const createCheckoutUrl = async (username, edition, cart) => {
         cart
       }),
     });
-    console.log(response)
+    console.log('Response URL:', response.url);
+    console.log('Response status:', response.status);
     
-    console.log('Checkout API response status:', response.status);
+    // If we get a 500 error from Cloudflare or any deployment, fallback to direct checkout
+    if (response.status === 500) {
+      console.log('Server returned 500 error, using direct checkout fallback');
+      
+      // Get the first item from the cart for direct checkout
+      const firstItem = cart[0];
+      
+      // Format the URL according to Tebex docs
+      const directCheckoutUrl = `https://checkout.tebex.io/checkout/${STORE_ID}/${firstItem.id}?username=${encodeURIComponent(formattedUsername)}`;
+      
+      return {
+        packageId: firstItem.id,
+        packageName: firstItem.name,
+        url: directCheckoutUrl,
+        expires: new Date(Date.now() + 3600000).toISOString(), // 1 hour expiry
+        isDirectCheckout: true
+      };
+    }
     
     // Handle non-OK responses with detailed errors
     if (!response.ok) {
@@ -49,7 +97,6 @@ export const createCheckoutUrl = async (username, edition, cart) => {
       try {
         // Try to parse error from response
         const errorData = await response.json();
-   
         errorMessage = errorData.error || errorMessage;
       } catch (parseError) {
         // If we can't parse JSON, use the status text
@@ -74,17 +121,21 @@ export const createCheckoutUrl = async (username, edition, cart) => {
     } catch (parseError) {
       console.error('Error parsing checkout response:', parseError);
       
-      // Create a fallback mock response if parsing fails
-      console.log('Creating fallback mock checkout URL');
-      const mockUrl = `https://example.com/checkout/fallback?mock=true`;
+      // Fallback to direct checkout on parsing error
+      console.log('Parsing error, using direct checkout fallback');
       
-      // Use the first item in cart for the fallback
+      // Get the first item from the cart for direct checkout
+      const firstItem = cart[0];
+      
+      // Format the URL according to Tebex docs
+      const directCheckoutUrl = `https://checkout.tebex.io/checkout/${STORE_ID}/${firstItem.id}?username=${encodeURIComponent(formattedUsername)}`;
+      
       return {
-        packageId: cart[0].id,
-        packageName: cart[0].name,
-        url: mockUrl,
-        expires: new Date(Date.now() + 3600000).toISOString(), // Expires in 1 hour
-        isMock: true,
+        packageId: firstItem.id,
+        packageName: firstItem.name,
+        url: directCheckoutUrl,
+        expires: new Date(Date.now() + 3600000).toISOString(), // 1 hour expiry
+        isDirectCheckout: true,
         isClientFallback: true
       };
     }

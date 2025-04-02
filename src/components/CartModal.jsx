@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiX, FiShoppingCart, FiTrash2, FiCreditCard, FiArrowRight, FiInfo } from 'react-icons/fi';
+import { FiX, FiShoppingCart, FiTrash2, FiCreditCard, FiArrowRight, FiInfo, FiExternalLink } from 'react-icons/fi';
 import { useCart } from '../contexts/CartContext';
 import LoginModal from './LoginModal';
 import { createCheckoutUrl } from '../utils/checkoutService';
@@ -17,6 +17,8 @@ function CartModal() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [isMockCheckout, setIsMockCheckout] = useState(false);
+  const [isDirectCheckout, setIsDirectCheckout] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [username, setUsername] = useState('');
   const [edition, setEdition] = useState('java');
@@ -39,6 +41,8 @@ function CartModal() {
     // Reset any previous errors and state
     setError(null);
     setIsMockCheckout(false);
+    setIsDirectCheckout(false);
+    setCheckoutUrl('');
     
     // Check if user is already logged in (stored in localStorage)
     const savedUsername = localStorage.getItem('minecraft_username');
@@ -51,6 +55,14 @@ function CartModal() {
     } else {
       setShowLoginModal(true);
     }
+  };
+  
+  // Handle direct checkout redirect button click
+  const handleDirectCheckoutRedirect = () => {
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    }
+    closeCart();
   };
   
   // Handle successful login from the LoginModal
@@ -72,6 +84,8 @@ function CartModal() {
     setIsProcessing(true);
     setError(null);
     setIsMockCheckout(false);
+    setIsDirectCheckout(false);
+    setCheckoutUrl('');
     
     try {
       // Use our checkout service to create a checkout URL
@@ -85,29 +99,43 @@ function CartModal() {
         console.log('Detected mock checkout URL');
       }
       
+      // Check if this is a direct checkout URL (for Cloudflare Pages)
+      if (checkoutData.isDirectCheckout) {
+        setIsDirectCheckout(true);
+        setCheckoutUrl(checkoutData.url);
+        console.log('Detected direct checkout URL:', checkoutData.url);
+      }
+      
+      // Clear the cart in any case
+      clearCart();
+      
       // For single item checkouts
       if (checkoutData.url) {
-        // Clear the cart before redirecting
-        clearCart();
-        
         // If it's a mock checkout, don't redirect but show a message
         if (checkoutData.isMock) {
           setIsMockCheckout(true);
           setIsProcessing(false);
           // Don't close the cart yet to show the user the mock message
-        } else {
-          // Real checkout URL - redirect
-          closeCart();
-          window.location.href = checkoutData.url;
+          return;
         }
+        
+        // If it's a direct checkout, don't redirect automatically
+        if (checkoutData.isDirectCheckout) {
+          setIsDirectCheckout(true);
+          setCheckoutUrl(checkoutData.url);
+          setIsProcessing(false);
+          // Don't close the cart yet to show the user the direct checkout message
+          return;
+        }
+        
+        // Real checkout URL via API - redirect automatically
+        closeCart();
+        window.location.href = checkoutData.url;
         return;
       }
       
       // For multiple item checkouts, use the first checkout URL
       if (checkoutData.checkouts && checkoutData.checkouts.length > 0) {
-        // Clear the cart before redirecting
-        clearCart();
-        
         const firstCheckout = checkoutData.checkouts[0];
         
         // If it's a mock checkout, don't redirect but show a message
@@ -115,11 +143,21 @@ function CartModal() {
           setIsMockCheckout(true);
           setIsProcessing(false);
           // Don't close the cart yet to show the user the mock message
-        } else {
-          // Real checkout URL - redirect
-          closeCart();
-          window.location.href = firstCheckout.url;
+          return;
         }
+        
+        // If it's a direct checkout, don't redirect automatically
+        if (firstCheckout.isDirectCheckout) {
+          setIsDirectCheckout(true);
+          setCheckoutUrl(firstCheckout.url);
+          setIsProcessing(false);
+          // Don't close the cart yet to show the user the direct checkout message
+          return;
+        }
+        
+        // Real checkout URL via API - redirect automatically
+        closeCart();
+        window.location.href = firstCheckout.url;
         return;
       }
       
@@ -129,6 +167,7 @@ function CartModal() {
       console.error('Checkout error:', error);
       setError(error.message || 'Failed to create checkout. Please try again.');
       setIsMockCheckout(false);
+      setIsDirectCheckout(false);
     } finally {
       setIsProcessing(false);
     }
@@ -180,7 +219,31 @@ function CartModal() {
             </div>
           )}
           
-          {cart.length === 0 && !isMockCheckout ? (
+          {/* Direct Checkout Notice for Cloudflare Pages */}
+          {isDirectCheckout && (
+            <div className="mb-6 p-4 bg-blue-900/30 border border-blue-700 rounded-md text-blue-400 text-sm">
+              <div className="flex items-center mb-2">
+                <FiInfo className="mr-2 flex-shrink-0" size={18} />
+                <span className="font-medium">Checkout Ready</span>
+              </div>
+              <p>Your order has been prepared and you'll be redirected to the Tebex checkout page. Click the button below to proceed with your payment.</p>
+              <div className="mt-4 p-3 bg-black/30 rounded border border-blue-800/50 font-mono text-xs overflow-auto">
+                <p>Cart cleared successfully</p>
+                <p>Items: {cart.length}</p>
+                <p>Total: ${getCartTotal()}</p>
+                <p>User: {username} ({edition})</p>
+              </div>
+              <button
+                onClick={handleDirectCheckoutRedirect}
+                className="mt-4 w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center"
+              >
+                <FiExternalLink className="mr-2" />
+                Proceed to Tebex Checkout
+              </button>
+            </div>
+          )}
+          
+          {cart.length === 0 && !isMockCheckout && !isDirectCheckout ? (
             <div className="py-12 flex flex-col items-center justify-center">
               <FiShoppingCart size={48} className="text-gray-500 mb-4" />
               <p className="text-gray-300 text-center">Your cart is empty</p>
@@ -193,7 +256,7 @@ function CartModal() {
             </div>
           ) : (
             <>
-              {!isMockCheckout && (
+              {!isMockCheckout && !isDirectCheckout && (
                 <>
                   <div className="space-y-4 mb-8">
                     {cart.map((item) => (
