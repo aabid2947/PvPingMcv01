@@ -11,7 +11,7 @@
 const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID || '752140';
 
 // Generate a unique token for the store (this should be stored in your environment variables in production)
-const STORE_TOKEN = `t66x-${STORE_ID}`; // Replace with actual API token in production
+const STORE_TOKEN = import.meta.env.VITE_TEBEX_API_KEY || `t66x-${STORE_ID}`; // Use actual API key if available
 
 // Base URL for Tebex Headless API
 const BASE_URL = 'https://headless.tebex.io/api';
@@ -46,14 +46,10 @@ const safeApiCall = async (apiCall, mockDataFn, ...args) => {
   } catch (error) {
     console.error(`API call error: ${error.message}`);
     
-    // In development, fall back to mock data on error
-    if (isDevelopment) {
-      console.log('[DEV] Falling back to mock data after API error');
-      return mockDataFn(...args);
-    }
-    
-    // In production, rethrow the error with a more user-friendly message
-    throw new Error(`Failed to complete the operation: ${error.message}`);
+    // Always fall back to mock data on error, even in production
+    // This ensures the store can function even when the API is down
+    console.log(`[${isDevelopment ? 'DEV' : 'PROD'}] Falling back to mock data after API error`);
+    return mockDataFn(...args);
   }
 };
 
@@ -84,19 +80,63 @@ export const fetchCategories = async () => {
  * @returns {Promise<Object>} All packages 
  */
 export const fetchPackages = async () => {
-  return safeApiCall(
-    async () => {
-      const apiUrl = `${BASE_URL}/accounts/${STORE_TOKEN}/packages`;
-      console.log(`[API] Fetching packages from: ${apiUrl}`);
-      
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch packages: ${response.status}`);
-      }
-      return await response.json();
-    },
-    getMockPackages
-  );
+  // In development, always use mock data
+  if (isDevelopment) {
+    console.log('[DEV] Using mock package data');
+    return getMockPackages();
+  }
+  
+  console.log(`[API] Attempting to fetch packages with token: ${STORE_TOKEN.substring(0, 4)}...`);
+  
+  try {
+    // Try the categories endpoint which is more reliable
+    const categoriesUrl = `${BASE_URL}/accounts/${STORE_TOKEN}/categories?includePackages=1`;
+    console.log(`[API] Fetching from categories endpoint: ${categoriesUrl}`);
+    
+    const response = await fetch(categoriesUrl);
+    console.log(`[API] Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      console.error(`[API] Categories endpoint failed with status: ${response.status}`);
+      throw new Error(`Failed to fetch from categories endpoint: ${response.status}`);
+    }
+    
+    const categoriesData = await response.json();
+    console.log('[API] Successfully fetched categories data');
+    
+    // Extract packages from categories
+    const extractedPackages = { data: [] };
+    
+    // Handle different possible response structures
+    if (Array.isArray(categoriesData)) {
+      console.log('[API] Processing array of categories');
+      categoriesData.forEach(category => {
+        if (category.packages && Array.isArray(category.packages)) {
+          extractedPackages.data.push(...category.packages);
+        }
+      });
+    } else if (categoriesData.data && Array.isArray(categoriesData.data)) {
+      console.log('[API] Processing categories with data property');
+      categoriesData.data.forEach(category => {
+        if (category.packages && Array.isArray(category.packages)) {
+          extractedPackages.data.push(...category.packages);
+        }
+      });
+    }
+    
+    console.log(`[API] Extracted ${extractedPackages.data.length} packages from categories`);
+    
+    if (extractedPackages.data.length === 0) {
+      console.warn('[API] No packages found in categories response, using mock data');
+      return getMockPackages();
+    }
+    
+    return extractedPackages;
+  } catch (error) {
+    console.error('[API] Error fetching packages:', error);
+    console.log('[PROD] Falling back to mock package data after error');
+    return getMockPackages();
+  }
 };
 
 /**

@@ -35,10 +35,23 @@ export function StoreProvider({ children }) {
         let sortedPackages = {};
         
         try {
+          console.log('Fetching packages from Tebex API...');
           packageData = await tebexHeadlessService.fetchPackages();
           
           if (!packageData) {
+            console.warn('No package data received from API');
             throw new Error('No package data received');
+          }
+          
+          // Check if we received mock data in production (API fallback)
+          const isMockData = !import.meta.env.DEV && 
+                            packageData && 
+                            Array.isArray(packageData.data) && 
+                            packageData.data.some(pkg => pkg.id && pkg.id.toString().includes('mock'));
+          
+          if (isMockData) {
+            console.log('Detected mock data in production - API may be down');
+            setError('Store data temporarily unavailable. Showing placeholder content.');
           }
           
           // Format packages for display
@@ -65,7 +78,8 @@ export function StoreProvider({ children }) {
             }
           };
           
-          setError('Failed to load store packages. Using empty catalog.');
+          // Set a user-friendly error message
+          setError('Unable to load store packages. Please try again later or contact support if the issue persists.');
         }
         
         // Update state with whatever data we have
