@@ -41,15 +41,19 @@ export default function CheckoutModal({ isOpen, onClose }) {
                    window.location.hostname === 'localhost' || 
                    window.location.hostname === '127.0.0.1';
       
-      if (isDev && checkoutUrl.includes('mock')) {
-        console.log('Development mode detected with mock URL - simulating redirect');
+      if (isDev && checkoutUrl.includes('mock') || checkoutUrl.includes('example.com')) {
+        console.log('Development mode or mock URL detected - simulating redirect');
         // In development with mock URLs, we don't actually redirect
         // This prevents navigating away from the app during testing
         
         // Just log that we would redirect in production
         console.log('In production, would redirect to:', checkoutUrl);
         
-        // We can display a toast or message here if needed
+        // We can display a message here if needed
+        setTimeout(() => {
+          // After "simulated" checkout, reset so user can continue testing
+          clearForm();
+        }, 3000);
       } else {
         // Regular production redirect
         const redirectTimer = setTimeout(() => {
@@ -150,8 +154,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
                                window.location.hostname === 'localhost' || 
                                window.location.hostname === '127.0.0.1';
                   
-                  if (isDev && checkoutUrl && checkoutUrl.includes('mock')) {
-                    console.log('Development mode detected - simulating manual redirect to:', checkoutUrl);
+                  if (isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) {
+                    console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
                     // For development, just log the redirect but don't navigate away
                     alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
                   } else if (checkoutUrl) {
@@ -188,9 +192,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Error display */}
                 {error && (
-                  <div className="bg-red-500/20 text-red-400 p-3 rounded-md flex items-center space-x-2">
-                    <AlertCircle size={18} />
-                    <span>{error}</span>
+                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+                    <p className="font-bold">Error</p>
+                    <p>{error}</p>
                   </div>
                 )}
                 

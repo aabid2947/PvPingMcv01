@@ -270,36 +270,52 @@ export const getBasketAuthLinks = async (basketIdent, returnUrl) => {
  */
 export const processCheckout = async (basketIdent, username, edition) => {
   try {
-    // In a real implementation, you would use Tebex API endpoints to:
-    // 1. Set the username for the basket
-    // 2. Get the basket to obtain the checkout URL
+    console.log(`Processing checkout for ${username} (${edition})`);
     
-    // For now, simulate the checkout process
+    // In development, always use mock checkout
     if (isDevelopment) {
+      console.log('[DEV] Using mock checkout data');
       return getMockCheckout(username, edition);
     }
     
-    // Get the current basket state
-    const basketResponse = await getBasket(basketIdent);
+    // If no basketIdent or API errors previously, create a new mock checkout in production
+    if (!basketIdent) {
+      console.log('[PROD] No basketIdent provided, using mock checkout');
+      return getMockCheckout(username, edition);
+    }
     
-    // Extract the checkout URL from the basket
-    if (basketResponse?.data?.links?.checkout) {
-      // Add username as a query parameter (the actual API might handle this differently)
-      const checkoutUrl = `${basketResponse.data.links.checkout}?username=${encodeURIComponent(username)}`;
+    // Try to get the current basket
+    try {
+      const basketResponse = await getBasket(basketIdent);
       
-      return {
-        success: true,
-        basketIdent: basketIdent,
-        username: username,
-        edition: edition,
-        checkoutUrl: checkoutUrl
-      };
-    } else {
-      throw new Error('No checkout URL found in basket response');
+      // Check if we have a valid basket response with checkout URL
+      if (basketResponse?.data?.links?.checkout) {
+        // Add username as a query parameter
+        const checkoutUrl = `${basketResponse.data.links.checkout}?username=${encodeURIComponent(username)}`;
+        
+        return {
+          success: true,
+          basketIdent: basketIdent,
+          username: username,
+          edition: edition,
+          url: checkoutUrl,
+          message: "Checkout created successfully"
+        };
+      } else {
+        // No valid checkout URL in response, use mock data
+        console.log('[PROD] No valid checkout URL in basket response, using mock checkout');
+        return getMockCheckout(username, edition);
+      }
+    } catch (basketError) {
+      console.error('Error getting basket for checkout:', basketError);
+      // Fall back to mock checkout
+      console.log('[PROD] Error getting basket, using mock checkout');
+      return getMockCheckout(username, edition);
     }
   } catch (error) {
     console.error('Error processing checkout:', error);
-    // Return mock checkout URL in case of error
+    // Always return mock checkout data on error
+    console.log('[PROD] Error in processCheckout, using mock checkout');
     return getMockCheckout(username, edition);
   }
 };

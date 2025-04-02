@@ -177,12 +177,22 @@ export function BasketProvider({ children }) {
       
       console.log('Checkout result:', result);
       
-      if (!result || !result.url) {
-        throw new Error('Invalid checkout response');
+      // 3. Handle checkout result
+      if (!result) {
+        throw new Error('No response from checkout service');
+      }
+      
+      // Check for URL in different potential locations
+      // This handles both the old and new API response formats
+      const checkoutUrl = result.url || result.checkoutUrl;
+      
+      if (!checkoutUrl) {
+        console.error('No checkout URL found in response:', result);
+        throw new Error('Invalid checkout response - missing URL');
       }
       
       // Set checkout URL for redirection
-      setCheckoutUrl(result.url);
+      setCheckoutUrl(checkoutUrl);
       
       // If this is a development mode checkout, keep track of that
       if (result.development_mode) {
