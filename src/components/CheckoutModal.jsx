@@ -53,8 +53,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
       // Log URL format validation for debugging
       if (checkoutUrl.startsWith('https://pay.tebex.io/')) {
         console.log('✅ Correct Tebex checkout URL format detected');
+      } else if (checkoutUrl.startsWith('https://ident.tebex.io/')) {
+        console.log('✅ Tebex authentication URL detected - this will redirect to payment after auth');
       } else {
-        console.warn('⚠️ Checkout URL does not match expected format https://pay.tebex.io/{ident}');
+        console.warn('⚠️ Checkout URL does not match expected formats');
       }
       
       setCheckoutComplete(true);
@@ -154,12 +156,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
       <h3 className="text-lg font-medium text-white">
         {(developmentCheckout || checkoutUrl?.includes('example.com'))
           ? "Test Checkout Complete"
-          : "Redirecting to payment..."}
+          : checkoutUrl?.includes('ident.tebex.io')
+            ? "Redirecting to authentication..."
+            : "Redirecting to payment..."}
       </h3>
       <p className="text-neutral-400 text-center text-sm">
         {(developmentCheckout || checkoutUrl?.includes('example.com'))
           ? "This is a test checkout. In production, you would be redirected to the payment page. The modal will close in a moment."
-          : "You will be redirected to the payment page in a moment. If you are not redirected, click the button below."}
+          : checkoutUrl?.includes('ident.tebex.io')
+            ? "You will be redirected to authenticate your Minecraft account before proceeding to payment. This ensures your purchase is linked to the correct account."
+            : "You will be redirected to the payment page in a moment. If you are not redirected, click the button below."}
       </p>
       <a 
         href={checkoutUrl} 
@@ -173,13 +179,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
           
           if ((isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) || developmentCheckout) {
             console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
-            
-            // For development, show more information about the URL
-            if (checkoutUrl.startsWith('https://pay.tebex.io/')) {
-              alert('DEVELOPMENT MODE: In production, this would redirect to the correct Tebex format:\n' + checkoutUrl);
-            } else {
-              alert('DEVELOPMENT MODE WARNING: The URL format does not match the expected https://pay.tebex.io/{ident} format.\nCurrent URL: ' + checkoutUrl);
-            }
+            // For development, just log the redirect but don't navigate away
+            alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
           } else if (checkoutUrl) {
             // Regular production redirect
             console.log('Manual redirect to:', checkoutUrl);
@@ -190,7 +191,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
       >
         {(developmentCheckout || checkoutUrl?.includes('example.com'))
           ? "Simulate Payment Redirect"
-          : "Continue to Payment"}
+          : checkoutUrl?.includes('ident.tebex.io')
+            ? "Continue to Authentication"
+            : "Continue to Payment"}
       </a>
     </div>
   );

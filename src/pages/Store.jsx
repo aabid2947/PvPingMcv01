@@ -491,26 +491,26 @@ export default function Store() {
             <img 
               src={pkg.image} 
               alt={pkg.name} 
-              className="w-full h-48 object-cover rounded-md"
+              className="w-full h-48 object-contain rounded-md"
             />
           </div>
         )}
         
         <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-        <p className="text-gray-400 mb-4 text-sm">{pkg.description}</p>
-        
+        {/* <p className="text-gray-400 mb-4 text-sm">{pkg.description}</p>
+         */}
         <div className="text-2xl font-bold text-purple-500 mb-6">
           {pkg.price}
         </div>
         
-        <ul className="mb-6 space-y-2">
+        {/* <ul className="mb-6 space-y-2">
           {pkg.features && pkg.features.map((feature, index) => (
             <li key={index} className="flex items-start">
               <FiCheck className="text-green-500 mt-1 mr-2 flex-shrink-0" />
               <span className="text-gray-300 text-sm">{feature}</span>
             </li>
           ))}
-        </ul>
+        </ul> */}
         
         {isPackageInCart ? (
           <div className="flex gap-2">

@@ -449,9 +449,36 @@ export const processCheckout = async (basketIdent, username, edition) => {
     try {
       const basketResponse = await getBasket(basketIdent);
       
-      // Check if we have a valid basket response with checkout URL
-      if (basketResponse?.data?.links?.checkout) {
-        let checkoutUrl = basketResponse.data.links.checkout;
+      // Check if we have a valid basket response
+      if (!basketResponse?.data) {
+        console.warn('[Tebex] Invalid basket response, falling back to mock checkout');
+        return getMockCheckout(username, edition);
+      }
+      
+      // Authenticate the basket before checkout
+      console.log('[Tebex] Authenticating basket before checkout');
+      const returnUrl = typeof window !== 'undefined' ? window.location.href : 'https://yoursite.com/checkout';
+      const authResult = await authenticateBasket(basketIdent, returnUrl);
+      
+      if (!authResult.success) {
+        console.error('[Tebex] Basket authentication failed:', authResult.error);
+        return getMockCheckout(username, edition);
+      }
+      
+      console.log('[Tebex] Basket authenticated successfully');
+      
+      // Determine the checkout URL based on authentication results
+      let checkoutUrl;
+      
+      // If we have an auth link from authentication, use it as the primary source
+      if (authResult.primaryAuthLink && authResult.primaryAuthLink.startsWith('https://')) {
+        checkoutUrl = authResult.primaryAuthLink;
+        console.log('[Tebex] Using authentication link for checkout:', checkoutUrl);
+      } 
+      // Fallback to checkout link from basket response
+      else if (basketResponse?.data?.links?.checkout) {
+        checkoutUrl = basketResponse.data.links.checkout;
+        console.log('[Tebex] Using basket checkout link:', checkoutUrl);
         
         // Ensure URL matches the expected format
         if (!checkoutUrl.startsWith('https://pay.tebex.io/')) {
@@ -459,26 +486,31 @@ export const processCheckout = async (basketIdent, username, edition) => {
           // Override with correct format
           checkoutUrl = `https://pay.tebex.io/${basketIdent}`;
         }
-        
-        // Add username as a query parameter
-        checkoutUrl = `${checkoutUrl}?username=${encodeURIComponent(username)}`;
-        console.log('[Tebex] Final checkout URL:', checkoutUrl);
-        
-        return {
-          success: true,
-          basketIdent: basketIdent,
-          username: username,
-          edition: edition,
-          url: checkoutUrl,
-          message: "Checkout created successfully"
-        };
-      } else {
-        // No valid checkout URL in response, use mock data
-        console.log('[Tebex] No valid checkout URL in basket response, using mock checkout');
-        return getMockCheckout(username, edition);
+      } 
+      // Last resort fallback
+      else {
+        console.warn('[Tebex] No checkout URL from auth or basket, using default format');
+        checkoutUrl = `https://pay.tebex.io/${basketIdent}`;
       }
+      
+      // Add username as a query parameter if not already present
+      if (!checkoutUrl.includes('username=')) {
+        const separator = checkoutUrl.includes('?') ? '&' : '?';
+        checkoutUrl = `${checkoutUrl}${separator}username=${encodeURIComponent(username)}`;
+      }
+      
+      console.log('[Tebex] Final checkout URL:', checkoutUrl);
+      
+      return {
+        success: true,
+        basketIdent: basketIdent,
+        username: username,
+        edition: edition,
+        url: checkoutUrl,
+        message: "Checkout created successfully"
+      };
     } catch (basketError) {
-      console.error('[Tebex] Error getting basket for checkout:', basketError);
+      console.error('[Tebex] Error during checkout process:', basketError);
       // Fall back to mock checkout
       console.log('[Tebex] Error getting basket, using mock checkout');
       return getMockCheckout(username, edition);
@@ -807,4 +839,53 @@ function getMockBasketWithCoupon(basketIdent, couponCode) {
   mockBasket.data.base_price = mockBasket.data.base_price * 0.9;
   mockBasket.data.total_price = mockBasket.data.total_price * 0.9;
   return mockBasket;
-} 
+}
+
+/**
+ * Authenticate a basket before checkout
+ * @param {string} basketIdent - Basket identifier
+ * @param {string} returnUrl - URL to return to after authentication
+ * @returns {Promise<Object>} Authentication status and URL
+ */
+export const authenticateBasket = async (basketIdent, returnUrl) => {
+  try {
+    console.log(`[Tebex] Authenticating basket ${basketIdent} with return URL ${returnUrl}`);
+    
+    // In development mode, return mock authentication data
+    const isDevMode = isDevelopment && !forceProduction();
+    if (isDevMode) {
+      console.log('[Tebex] Using mock authentication in development mode');
+      return {
+        success: true,
+        authLinks: getMockAuthLinks(),
+        message: "Mock authentication successful"
+      };
+    }
+    
+    // Get auth links for the basket
+    const authLinksResponse = await getBasketAuthLinks(basketIdent, returnUrl);
+    
+    // Validate the response
+    if (!authLinksResponse || !Array.isArray(authLinksResponse) || authLinksResponse.length === 0) {
+      console.error('[Tebex] Invalid or empty auth links response:', authLinksResponse);
+      throw new Error('Failed to get valid authentication links');
+    }
+    
+    console.log('[Tebex] Authentication links retrieved successfully:', authLinksResponse);
+    
+    return {
+      success: true,
+      authLinks: authLinksResponse,
+      // Get the first auth link as the primary one (usually there's only one)
+      primaryAuthLink: authLinksResponse[0]?.url,
+      message: "Authentication links retrieved successfully"
+    };
+  } catch (error) {
+    console.error('[Tebex] Error authenticating basket:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to authenticate basket',
+      message: "Authentication failed"
+    };
+  }
+}; 

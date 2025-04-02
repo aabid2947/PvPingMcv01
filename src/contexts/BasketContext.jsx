@@ -21,6 +21,7 @@ export function BasketProvider({ children }) {
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [developmentCheckout, setDevelopmentCheckout] = useState(false);
   const [lastAddedItem, setLastAddedItem] = useState(null);
+  const [authStatus, setAuthStatus] = useState(null);
   
   // Load basketIdent from localStorage on initial render
   useEffect(() => {
@@ -341,9 +342,42 @@ export function BasketProvider({ children }) {
         console.warn('Some items may not have been added to the basket properly');
       }
       
-      // Direct checkout URL for Tebex
-      const checkoutUrl = `https://pay.tebex.io/${currentBasketIdent}`;
-      console.log('Redirecting to Tebex checkout URL:', checkoutUrl);
+      // 3. Authenticate the basket before checkout
+      console.log('Authenticating basket before checkout...');
+      const returnUrl = window.location.href;
+      updateAuthStatus({ state: 'authenticating', message: 'Authenticating your basket...' });
+      const authResult = await tebexService.authenticateBasket(currentBasketIdent, returnUrl);
+      
+      if (!authResult.success) {
+        console.error('Failed to authenticate basket:', authResult.error);
+        updateAuthStatus({ state: 'failed', message: `Authentication failed: ${authResult.error || 'Unknown error'}` });
+        setError(`Authentication failed: ${authResult.error || 'Unknown error'}`);
+        return false;
+      }
+      
+      console.log('Basket authenticated successfully:', authResult);
+      updateAuthStatus({ state: 'success', message: 'Authentication successful', data: authResult });
+      
+      // 4. Determine the correct checkout URL
+      let checkoutUrl;
+      
+      // If we have an auth link from authentication, use it
+      if (authResult.primaryAuthLink && authResult.primaryAuthLink.startsWith('https://')) {
+        checkoutUrl = authResult.primaryAuthLink;
+        console.log('Using auth link for checkout:', checkoutUrl);
+      } else {
+        // Fallback to direct checkout URL
+        checkoutUrl = `https://pay.tebex.io/${currentBasketIdent}`;
+        console.log('Using direct checkout URL:', checkoutUrl);
+      }
+      
+      // 5. Add username as a query parameter if not already present
+      if (!checkoutUrl.includes('username=')) {
+        const separator = checkoutUrl.includes('?') ? '&' : '?';
+        checkoutUrl = `${checkoutUrl}${separator}username=${encodeURIComponent(formattedUsername)}`;
+      }
+      
+      console.log('Final checkout URL:', checkoutUrl);
       
       // Set the checkout URL for redirection
       setCheckoutUrl(checkoutUrl);
@@ -420,6 +454,13 @@ export function BasketProvider({ children }) {
     }
   };
   
+  // Add a function to track authentication status
+  const updateAuthStatus = (status) => {
+    setAuthStatus(status);
+    // Log auth status for debugging
+    console.log(`[Basket] Authentication status updated:`, status);
+  };
+  
   // Value to be provided by context
   const value = {
     basketIdent,
@@ -441,7 +482,9 @@ export function BasketProvider({ children }) {
     getBasketAuthLinks,
     syncCartWithBasket,
     forceProductionMode,
-    resetToDevelopmentMode
+    resetToDevelopmentMode,
+    authStatus,
+    updateAuthStatus
   };
   
   return (
