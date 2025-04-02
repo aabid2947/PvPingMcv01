@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from './pages/Store';
+import { CartProvider } from './contexts/CartContext';
+import CartModal from './components/CartModal';
 import './index.css'
 import Home from './pages/Home'
 import BlogOverview from './pages/BlogOverview'
@@ -117,6 +119,9 @@ function AppContent() {
         </Routes>
       </main>
       <FooterComponent />
+      
+      {/* Cart Modal - will only be visible when cartOpen is true */}
+      <CartModal />
     </div>
   );
 }
@@ -125,9 +130,11 @@ function App() {
   return (
     <HelmetProvider>
       <StoreProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <CartProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CartProvider>
       </StoreProvider>
     </HelmetProvider>
   );

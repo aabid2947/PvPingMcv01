@@ -1,10 +1,11 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid, FiAlertCircle } from 'react-icons/fi';
+import { FiShoppingCart, FiDollarSign, FiPackage, FiStar, FiTag, FiFilter, FiGrid, FiAlertCircle, FiPlus } from 'react-icons/fi';
 import { initializeTebex, loadTebexScript, fetchPackages } from '../utils/tebexService';
 import { fetchCategories, categorizePackages, getMockPackages } from '../utils/packageService';
 import LoginModal from '../components/LoginModal';
 import PaymentDialog from '../components/PaymentDialog';
+import { useCart } from '../contexts/CartContext';
 
 // Create context for store data
 export const StoreContext = createContext();
@@ -184,6 +185,9 @@ export default function Store() {
     categories
   } = useStore();
   
+  // Cart context
+  const { addToCart, isInCart, getCartItemCount, openCart } = useCart();
+  
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [animating, setAnimating] = useState(false);
 
@@ -296,7 +300,7 @@ export default function Store() {
     setProcessingPayment(false);
     
     // Show success notification
-    alert(`Thank you for your purchase! Your package "${selectedPackage.name}" has been activated for ${username}.`);
+    // alert(`Thank you for your purchase! Your package "${selectedPackage.name}" has been activated for ${username}.`);
   };
   
   // Handle payment errors
@@ -309,6 +313,7 @@ export default function Store() {
   // Render a package card
   const renderPackageCard = (pkg) => {
     const isPurchased = isPackagePurchased(pkg.id);
+    const isPackageInCart = isInCart(pkg.id);
     
     return (
       <div key={pkg.id} className="package-card relative bg-[#1D1E29] rounded-lg shadow-lg p-6 border border-gray-800 hover:border-blue-500 transition-all duration-300">
@@ -341,32 +346,46 @@ export default function Store() {
           </div>
         )}
         
-        <button
-          onClick={() => handlePurchaseClick(pkg)}
-          disabled={loading || !tebexLoaded || processingPayment || isPurchased}
-          className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors ${
-            isPurchased 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-purple-600 hover:bg-purple-700 text-white'
-          } ${(!tebexLoaded || loading || processingPayment) ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          {isPurchased ? (
-            <>
-              <FiCheck className="mr-2" />
-              Purchased
-            </>
-          ) : processingPayment && selectedPackage && selectedPackage.id === pkg.id ? (
-            <>
-              <div className="loader mr-2"></div>
-              Processing...
-            </>
-          ) : (
-            <>
+        {isPurchased ? (
+          <button
+            disabled
+            className="w-full py-3 px-4 rounded-md font-medium flex items-center justify-center bg-green-500 text-white"
+          >
+            <FiCheck className="mr-2" />
+            Purchased
+          </button>
+        ) : isPackageInCart ? (
+          <div className="flex gap-2">
+            <button
+              onClick={openCart}
+              className="flex-1 py-3 px-4 rounded-md font-medium flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            >
               <FiShoppingCart className="mr-2" />
-              Purchase Now
-            </>
-          )}
-        </button>
+              View Cart
+            </button>
+            <button
+              onClick={() => handlePurchaseClick(pkg)}
+              disabled={loading || !tebexLoaded || processingPayment}
+              className={`flex-1 py-3 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
+                (!tebexLoaded || loading || processingPayment) ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <FiDollarSign className="mr-2" />
+              Buy Now
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => addToCart(pkg)}
+            disabled={loading || !tebexLoaded}
+            className={`w-full py-3 px-4 rounded-md font-medium flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white transition-colors ${
+              (!tebexLoaded || loading) ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            <FiPlus className="mr-2" />
+            Add to Cart
+          </button>
+        )}
       </div>
     );
   };
@@ -641,6 +660,22 @@ export default function Store() {
           onPaymentError={handlePaymentError}
         />
       )}
+
+      {/* Cart button with count */}
+      <div className="fixed bottom-8 right-8 z-30">
+        <button
+          onClick={openCart}
+          className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-lg flex items-center justify-center transition-colors relative"
+          aria-label="Open Cart"
+        >
+          <FiShoppingCart size={24} />
+          {getCartItemCount() > 0 && (
+            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+              {getCartItemCount()}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

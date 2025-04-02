@@ -213,57 +213,52 @@ export default function OriginMC() {
       </div>
       {/* <JoinDiscord /> */}
       {/* Discord Community Section - Updated to match the image */}
-      <div className="w-full container flex flex-row gap-8 mx-auto md:w-4/5 pt-8 pb-2 px-2 md:py-16">
+      <div className="w-full container flex flex-col md:flex-row gap-8 mx-auto md:w-4/5 pt-8 pb-2 px-2 md:py-16">
+  {/* Main Content Container */}
+  <div className="bg-[#13141d] w-full md:w-[60%] border border-gray-800 rounded-3xl flex flex-col items-center justify-between relative shadow-lg">
+    {/* Minecraft Character - Mobile Top */}
+    <div className="md:absolute md:left-[-9rem] z-10 p-4 md:p-8 order-first md:order-none">
+      <img
+        src={pngtree}
+        alt="Minecraft Character"
+        className="h-40 md:h-80 w-auto mx-auto"
+      />
+    </div>
 
+    {/* Center Content */}
+    <div className="text-center md:ml-32 relative z-10 p-4 md:p-6 flex-1">
+      <div className="hidden md:block absolute h-1/2 my-auto right-0 top-0 bottom-0 w-1 bg-cyan-400"></div>
 
-        <div className="bg-[#13141d] w-[60%] border border-gray-800 rounded-3xl flex flex-col md:flex-row items-center justify-between relative  shadow-lg">
-          {/* Left Side - Minecraft Character */}
-          <div className="absolute left-[-9rem] z-10 p-6 md:p-8">
-            <img
-              src={pngtree}
-              alt="Minecraft Character"
-              className="h-52 md:h-80 w-auto"
-            />
-          </div>
-
-          {/* Center Content */}
-          <div className="text-center  ml-32 relative z-10 p-4 md:p-6 flex-1 ">
-      <div className="absolute h-1/2 my-auto right-0 top-0 bottom-0 w-1 bg-cyan-400"></div>
-
-            <h2 className="text-xl md:text-2xl font-bold mb-2">
-              Join our discord community!
-            </h2>
-            <p className="text-gray-400 font-['Gilroy-Bold'] text-ellipsis text-md md:text-base">
-              Find new friends to explore dungeons, build a <span className="text-blue-400">town</span> and discover <span className="text-red-400">rich</span> together.
-              <br className="hidden md:block " />
-              We also offer <span className="font-semibold">NVT</span> support.
-            </p>
-            <div className="relative z-10 p-6 md:p-8">
-              <a
-                href="http://pvpingmc.net/discord"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#7698FF] font-['Gilroy-ExtraBold']  transition-all duration-300 text-[#2D177D] text-2xl  font-extrabold py-2 px-12 border border-4 border-[#7698FF]  rounded-lg inline-block shadow-md hover:shadow-lg"
-              >
-                Join discord!
-              </a>
-            </div>
-          </div>
-
-          {/* Discord Button */}
-
-
-          {/* Right Side Decorative Image */}
-        </div>
-        <div className="hidden md:block p-1   h-[17rem] w-[40%]">
-          <img
-            src={frame}
-            alt="Server Background"
-            className="h-full w-full object-cover opacity-50 brightness-100 rounded-3xl"
-          />
-        </div>
-
+      <h2 className="text-xl md:text-2xl font-bold mb-2">
+        Join our discord community!
+      </h2>
+      <p className="text-gray-400 font-['Gilroy-Bold'] text-ellipsis text-sm md:text-base px-4 md:px-0">
+        Find new friends to explore dungeons, build a <span className="text-blue-400">town</span> and discover <span className="text-red-400">rich</span> together.
+        <br className="hidden md:block" />
+        We also offer <span className="font-semibold">NVT</span> support.
+      </p>
+      <div className="relative z-10 p-4 md:p-8">
+        <a
+          href="http://pvpingmc.net/discord"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#7698FF] font-['Gilroy-ExtraBold'] transition-all duration-300 text-[#2D177D] text-lg md:text-2xl font-extrabold py-2 px-8 md:px-12 border border-4 border-[#7698FF] rounded-lg inline-block shadow-md hover:shadow-lg"
+        >
+          Join discord!
+        </a>
       </div>
+    </div>
+  </div>
+
+  {/* Right Side Decorative Image (Hidden on mobile) */}
+  <div className="hidden md:block p-1 h-[17rem] w-full md:w-[40%]">
+    <img
+      src={frame}
+      alt="Server Background"
+      className="h-full w-full object-cover opacity-50 brightness-100 rounded-3xl"
+    />
+  </div>
+</div>
 
       {/* Play Now Section */}
       {/* <div className="w-full container mx-auto flex flex-row gap-8 px-4 md:w-4/5 py-8 md:py-16">
