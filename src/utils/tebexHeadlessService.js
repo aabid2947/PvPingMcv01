@@ -12,16 +12,13 @@ const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID ;
 
 // Generate a unique token for the store (this should be stored in your environment variables in production)
 const STORE_TOKEN = import.meta.env.VITE_TEBEX_API_KEY ; // Use actual API key if available
+console.log(STORE_TOKEN);
 
 // Base URL for Tebex Headless API
 const BASE_URL = 'https://headless.tebex.io/api';
 
 // Check if we're in development mode
-const isDevelopment = 
-  (process.env.NODE_ENV === 'development' || 
-   import.meta.env.DEV === true) && 
-  (window.location.hostname === 'localhost' || 
-   window.location.hostname === '127.0.0.1');
+const isDevelopment = false;
 
 // Force production mode if specified in URL params (for testing)
 const forceProduction = () => {
@@ -119,7 +116,7 @@ export const fetchPackages = async () => {
   }
   
   try {
-    console.log(`[Tebex] Attempting to fetch packages from API with token: ${STORE_TOKEN.substring(0, 4)}...`);
+    console.log(`[Tebex] Attempting to fetch packages from API with token: ${STORE_TOKEN}`);
     
     // Try the categories endpoint which is more reliable
     const categoriesUrl = `${BASE_URL}/accounts/${STORE_TOKEN}/categories?includePackages=1`;
@@ -200,6 +197,7 @@ export const fetchPackages = async () => {
 export const createBasket = async (completeUrl, cancelUrl) => {
   try {
     // Check if we're in development mode and not forcing production
+    console.log(99)
     const isDevMode = isDevelopment && !forceProduction();
     console.log(`[Tebex] Environment: ${isDevMode ? 'DEVELOPMENT' : 'PRODUCTION'}`);
     
@@ -212,18 +210,13 @@ export const createBasket = async (completeUrl, cancelUrl) => {
     const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/baskets`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        complete_url: completeUrl,
-        cancel_url: cancelUrl,
-        complete_auto_redirect: true,
-        custom: {
-          source: 'website-cart'
-        }
-      })
+      
     });
+
+    console.log(response.data);
+
 
     if (!response.ok) {
       const errorText = await response.text();

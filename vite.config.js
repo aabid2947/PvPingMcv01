@@ -4,10 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 import matter from 'gray-matter'
 import { resolve } from 'path'
 import fs from 'fs'
-import dotenv from 'dotenv'
-
-// Load env variables
-dotenv.config()
 
 // Custom plugin to handle markdown files
 const markdownPlugin = () => ({
@@ -88,11 +84,6 @@ export default defineConfig({
       allow: ['content', '.']
     },
     historyApiFallback: true,
-  },
-  // Define environment variables to expose to the client
-  define: {
-    'import.meta.env.VITE_TEBEX_STORE_ID': JSON.stringify(process.env.VITE_TEBEX_STORE_ID),
-    'import.meta.env.VITE_TEBEX_PACKAGE_IDS': JSON.stringify(process.env.VITE_TEBEX_PACKAGE_IDS),
   },
   preview: {
     port: 5000,
