@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext';
 import { useUser } from '../context/UserContext';
 import CartModal from '../components/CartModal';
 import LoginModal from '../components/LoginModal';
+import { useBasket } from '../contexts/BasketContext';
 
 // Create context for store data
 export const StoreContext = createContext();
@@ -324,7 +325,16 @@ export default function Store() {
   } = useStore();
   
   // Cart context
-  const { addToCart, isInCart, getCartItemCount, openCart } = useCart();
+  const { 
+    addToCart, 
+    isInCart, 
+    getCartItemCount, 
+    openCart,
+    connectToBasketContext 
+  } = useCart();
+  
+  // Basket context for Tebex integration
+  const basketContext = useBasket();
   
   // User context for checking username
   const { username, isLoggedIn, login } = useUser();
@@ -334,6 +344,15 @@ export default function Store() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [basketError, setBasketError] = useState(null);
+  
+  // Connect the cart context to the basket context
+  useEffect(() => {
+    if (basketContext) {
+      connectToBasketContext(basketContext);
+      console.log('Connected Cart context to Basket context');
+    }
+  }, [basketContext, connectToBasketContext]);
   
   // Check for just-logged-in state based on URL parameter
   useEffect(() => {
@@ -367,7 +386,9 @@ export default function Store() {
   };
 
   // Handle add to cart
-  const handleAddToCart = (pkg) => {
+  const handleAddToCart = async (pkg) => {
+    setBasketError(null);
+    
     // If user is not logged in (no username), show login modal first
     if (!username) {
       setSelectedPackage(pkg);
@@ -375,16 +396,37 @@ export default function Store() {
       return;
     }
     
-    // Format the package data for the cart
-    const cartItem = {
-      id: pkg.id,
-      name: pkg.name,
-      price: pkg.price,
-      image: pkg.image || null,
-      description: pkg.description || ''
-    };
-    
-    addToCart(cartItem);
+    try {
+      // Ensure we have a valid basket before adding to cart
+      if (basketContext) {
+        // Make sure we have a valid basket (create one if needed)
+        const basketId = await basketContext.getOrCreateBasket();
+        
+        if (!basketId) {
+          console.error('Failed to get or create basket');
+          setBasketError('Failed to initialize your shopping cart. Please try again.');
+          return;
+        }
+        
+        console.log(`Adding item to cart with valid basket ID: ${basketId}`);
+      }
+      
+      // Format the package data for the cart
+      const cartItem = {
+        id: pkg.id,
+        name: pkg.name,
+        price: pkg.price,
+        image: pkg.image || null,
+        description: pkg.description || ''
+      };
+      
+      // Add to cart (this will trigger the pending operations in CartContext)
+      addToCart(cartItem);
+      
+    } catch (error) {
+      console.error('Error during add to cart:', error);
+      setBasketError('Failed to add item to cart. Please try again.');
+    }
   };
   
   // Handle login success from the modal
@@ -580,9 +622,9 @@ export default function Store() {
             </button>
           ))}
         </div>
-        </div>
-        
-      {/* Error message */}
+      </div>
+      
+      {/* Error messages */}
       {error && (
         <div className="bg-red-900/20 border border-red-900 rounded-md p-4 mb-8">
           <div className="flex">
@@ -590,6 +632,18 @@ export default function Store() {
             <div>
               <h3 className="text-sm font-medium text-red-400">Error loading store</h3>
               <p className="mt-2 text-sm text-gray-300">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {basketError && (
+        <div className="bg-red-900/20 border border-red-900 rounded-md p-4 mb-8">
+          <div className="flex">
+            <FiAlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-red-400">Shopping Cart Error</h3>
+              <p className="mt-2 text-sm text-gray-300">{basketError}</p>
             </div>
           </div>
         </div>

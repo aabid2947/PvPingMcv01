@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react
 import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from './pages/Store';
 import { CartProvider } from './contexts/CartContext';
+import { BasketProvider } from './contexts/BasketContext';
 import CartModal from './components/CartModal';
 import './index.css'
 import Home from './pages/Home'
@@ -129,13 +130,15 @@ function AppContent() {
 function App() {
   return (
     <HelmetProvider>
-      <StoreProvider>
-        <CartProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </CartProvider>
-      </StoreProvider>
+      <BasketProvider>
+        <StoreProvider>
+          <CartProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </CartProvider>
+        </StoreProvider>
+      </BasketProvider>
     </HelmetProvider>
   );
 }

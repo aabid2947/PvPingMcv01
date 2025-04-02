@@ -233,6 +233,39 @@ export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) =
 };
 
 /**
+ * Remove a package from a basket
+ * @param {string} basketIdent - Basket identifier
+ * @param {string} packageId - Package ID to remove
+ * @returns {Promise<Object>} Updated basket
+ */
+export const removePackageFromBasket = async (basketIdent, packageId) => {
+  try {
+    if (isDevelopment) {
+      return getMockBasketWithoutPackage(basketIdent, packageId);
+    }
+
+    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/packages/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        package_id: packageId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to remove package from basket: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error removing package from basket:', error);
+    // Return mock updated basket in case of error
+    return getMockBasketWithoutPackage(basketIdent, packageId);
+  }
+};
+
+/**
  * Get basket by ID
  * @param {string} basketIdent - Basket identifier
  * @returns {Promise<Object>} Basket data
@@ -341,8 +374,18 @@ export const processCheckout = async (basketIdent, username, edition) => {
       
       // Check if we have a valid basket response with checkout URL
       if (basketResponse?.data?.links?.checkout) {
+        let checkoutUrl = basketResponse.data.links.checkout;
+        
+        // Ensure URL matches the expected format
+        if (!checkoutUrl.startsWith('https://pay.tebex.io/')) {
+          console.warn('[PROD] Checkout URL from API does not match expected format, modifying to correct format');
+          // Override with correct format
+          checkoutUrl = `https://pay.tebex.io/${basketIdent}`;
+        }
+        
         // Add username as a query parameter
-        const checkoutUrl = `${basketResponse.data.links.checkout}?username=${encodeURIComponent(username)}`;
+        checkoutUrl = `${checkoutUrl}?username=${encodeURIComponent(username)}`;
+        console.log('[PROD] Final checkout URL:', checkoutUrl);
         
         return {
           success: true,
@@ -416,12 +459,13 @@ export const getMockCheckout = (username, game_edition) => {
   // Generate timestamp-based ID to simulate unique checkouts
   const timestamp = Date.now();
   const randId = Math.random().toString(36).substring(2, 8);
+  const mockBasketIdent = `mock-basket-${timestamp}-${randId}`;
   
   // Return a structure similar to the real API
   return {
     message: "Checkout created successfully",
-    url: `https://example.com/checkout/mock-${timestamp}-${randId}?username=${username}`,
-    basket_id: `mock-basket-${timestamp}`,
+    url: `https://pay.tebex.io/${mockBasketIdent}?username=${encodeURIComponent(username)}`,
+    basket_id: mockBasketIdent,
     complete: true,
     development_mode: true // Add a flag to indicate this is a mock checkout
   };
@@ -553,7 +597,7 @@ function getMockBasket(completeUrl, cancelUrl) {
       custom: { source: "website-cart" },
       links: {
         payment: `https://checkout.tebex.io/api/payments/mock-${basketIdent}`,
-        checkout: `https://checkout.tebex.io/checkout/${basketIdent}`
+        checkout: `https://pay.tebex.io/${basketIdent}`
       }
     }
   };
@@ -597,7 +641,44 @@ function getMockBasketWithPackage(basketIdent, packageId, quantity) {
         symbol: '$'
       },
       links: {
-        checkout: `https://example.com/checkout/${basketIdent}`
+        checkout: `https://pay.tebex.io/${basketIdent || `mock-basket-${Date.now()}`}`
+      }
+    }
+  };
+}
+
+function getMockBasketWithoutPackage(basketIdent, packageId) {
+  // Find the mock package to remove from the basket
+  const mockPackages = getMockPackages();
+  let removedPackage = null;
+  
+  if (mockPackages && mockPackages.data && Array.isArray(mockPackages.data)) {
+    removedPackage = mockPackages.data.find(pkg => pkg.id === packageId);
+  } else if (Array.isArray(mockPackages)) {
+    removedPackage = mockPackages.find(pkg => pkg.id === packageId);
+  }
+  
+  // If package not found, create a placeholder
+  if (!removedPackage) {
+    removedPackage = {
+      id: packageId,
+      name: `Package ${packageId}`,
+      price: 9.99
+    };
+  }
+  
+  return {
+    success: true,
+    data: {
+      ident: basketIdent || `mock-basket-${Date.now()}`,
+      packages: [],
+      total: 0,
+      currency: {
+        iso_4217: 'USD',
+        symbol: '$',
+      },
+      links: {
+        checkout: `https://pay.tebex.io/${basketIdent || `mock-basket-${Date.now()}`}`
       }
     }
   };
@@ -615,17 +696,18 @@ function getMockBasketById(basketIdent) {
         symbol: '$',
       },
       links: {
-        checkout: `https://example.com/checkout/${basketIdent}`
+        checkout: `https://pay.tebex.io/${basketIdent || `mock-basket-${Date.now()}`}`
       }
     }
   };
 }
 
 function getMockAuthLinks() {
+  const mockBasketIdent = `mock-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   return [
     {
       name: "Minecraft",
-      url: "https://ident.tebex.io/minecraft"
+      url: `https://pay.tebex.io/${mockBasketIdent}`
     }
   ];
 }

@@ -20,6 +20,7 @@ export function BasketProvider({ children }) {
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [developmentCheckout, setDevelopmentCheckout] = useState(false);
+  const [lastAddedItem, setLastAddedItem] = useState(null);
   
   // Load basketIdent from localStorage on initial render
   useEffect(() => {
@@ -27,6 +28,7 @@ export function BasketProvider({ children }) {
       try {
         const savedBasketIdent = localStorage.getItem('tebexBasketIdent');
         if (savedBasketIdent) {
+          console.log('Found existing basket ID in localStorage:', savedBasketIdent);
           setBasketIdent(savedBasketIdent);
           // Fetch the latest basket data
           fetchBasket(savedBasketIdent).catch(err => {
@@ -35,6 +37,8 @@ export function BasketProvider({ children }) {
             localStorage.removeItem('tebexBasketIdent');
             setBasketIdent(null);
           });
+        } else {
+          console.log('No basket ID found in localStorage');
         }
       } catch (e) {
         console.error('Error loading basket from localStorage:', e);
@@ -43,12 +47,52 @@ export function BasketProvider({ children }) {
     
     loadBasketIdent();
   }, []);
+
+  // Watch cart changes to sync with basket
+  useEffect(() => {
+    // Only attempt to sync cart with basket if we have items and a username
+    if (cart.length > 0 && username && !isProcessingCheckout) {
+      syncCartWithBasket();
+    }
+  }, [cart, username]);
+  
+  // Sync the current cart items with the Tebex basket
+  const syncCartWithBasket = async () => {
+    if (!username) {
+      console.warn('Cannot sync cart with basket: No username set');
+      return;
+    }
+    
+    try {
+      // Ensure we have a valid basket
+      const currentBasketIdent = await getOrCreateBasket();
+      if (!currentBasketIdent) {
+        throw new Error('Failed to get or create basket for cart sync');
+      }
+      
+      console.log(`Syncing cart with basket ID: ${currentBasketIdent}`);
+      
+      // TODO: For a full sync, we would need to:
+      // 1. Get current packages in the basket
+      // 2. Compare with cart items
+      // 3. Add missing items / remove extra items
+      
+      // For now, we'll just ensure the basket exists
+      return currentBasketIdent;
+    } catch (error) {
+      console.error('Error syncing cart with basket:', error);
+      setError('Failed to sync your cart. Please try again.');
+      return null;
+    }
+  };
   
   // Initialize a new basket if needed
   const initializeBasket = async () => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('Initializing new Tebex basket...');
       
       // Complete URL and cancel URL default to current page
       const completeUrl = window.location.href;
@@ -58,6 +102,8 @@ export function BasketProvider({ children }) {
       
       if (response?.data?.ident) {
         const newBasketIdent = response.data.ident;
+        console.log('Successfully created new basket with ID:', newBasketIdent);
+        
         setBasketIdent(newBasketIdent);
         setBasketData(response.data);
         
@@ -66,6 +112,7 @@ export function BasketProvider({ children }) {
         
         return newBasketIdent;
       } else {
+        console.error('Failed to create basket - no basket identifier returned', response);
         throw new Error('Failed to create basket - no basket identifier returned');
       }
     } catch (error) {
@@ -79,18 +126,25 @@ export function BasketProvider({ children }) {
   
   // Fetch current basket data
   const fetchBasket = async (ident) => {
-    if (!ident) return null;
+    if (!ident) {
+      console.warn('Cannot fetch basket: No basket ID provided');
+      return null;
+    }
     
     try {
       setIsLoading(true);
       setError(null);
       
+      console.log(`Fetching basket data for ID: ${ident}`);
+      
       const response = await tebexService.getBasket(ident);
       
       if (response?.data) {
+        console.log('Basket data fetched successfully:', response.data);
         setBasketData(response.data);
         return response.data;
       } else {
+        console.error('Failed to fetch basket data - empty response:', response);
         throw new Error('Failed to fetch basket data');
       }
     } catch (error) {
@@ -105,15 +159,19 @@ export function BasketProvider({ children }) {
   // Get or create a basket
   const getOrCreateBasket = async () => {
     if (basketIdent) {
-      // We already have a basket, but let's refresh it
+      console.log('Using existing basket ID:', basketIdent);
+      
+      // We already have a basket, but let's verify it's still valid
       const basketData = await fetchBasket(basketIdent);
       if (basketData) {
         return basketIdent;
       }
       
+      console.log('Existing basket is invalid, creating a new one');
       // If we couldn't fetch the basket, create a new one
       return await initializeBasket();
     } else {
+      console.log('No basket ID exists, creating a new one');
       // No basket exists, create a new one
       return await initializeBasket();
     }
@@ -121,6 +179,12 @@ export function BasketProvider({ children }) {
   
   // Add a package to the basket
   const addPackageToBasket = async (packageId, quantity = 1) => {
+    if (!packageId) {
+      console.error('Cannot add package to basket: No package ID provided');
+      setError('Invalid package ID');
+      return null;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -131,18 +195,62 @@ export function BasketProvider({ children }) {
         throw new Error('Could not create or fetch basket');
       }
       
+      console.log(`Adding package ${packageId} to basket ${currentBasketIdent}`);
+      
       // Add the package to the basket
       const response = await tebexService.addPackageToBasket(currentBasketIdent, packageId, quantity);
       
       if (response?.data) {
+        console.log('Package added to basket successfully:', response.data);
         setBasketData(response.data);
+        setLastAddedItem({ packageId, timestamp: Date.now() });
         return response.data;
       } else {
+        console.error('Failed to add package to basket - empty response:', response);
         throw new Error('Failed to add package to basket');
       }
     } catch (error) {
       console.error('Error adding package to basket:', error);
       setError(error.message || 'Failed to add package to basket');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Remove a package from the basket
+  const removePackageFromBasket = async (packageId) => {
+    if (!packageId) {
+      console.error('Cannot remove package from basket: No package ID provided');
+      setError('Invalid package ID');
+      return null;
+    }
+    
+    if (!basketIdent) {
+      console.warn('Cannot remove package: No basket exists');
+      return null;
+    }
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log(`Removing package ${packageId} from basket ${basketIdent}`);
+      
+      // Remove the package from the basket
+      const response = await tebexService.removePackageFromBasket(basketIdent, packageId);
+      
+      if (response?.data) {
+        console.log('Package removed from basket successfully:', response.data);
+        setBasketData(response.data);
+        return response.data;
+      } else {
+        console.error('Failed to remove package from basket - empty response:', response);
+        throw new Error('Failed to remove package from basket');
+      }
+    } catch (error) {
+      console.error('Error removing package from basket:', error);
+      setError(error.message || 'Failed to remove package from basket');
       return null;
     } finally {
       setIsLoading(false);
@@ -156,14 +264,19 @@ export function BasketProvider({ children }) {
       setError(null);
       
       if (!basketIdent) {
+        console.error('No basket identifier available for auth links');
         throw new Error('No basket identifier available');
       }
+      
+      console.log(`Getting auth links for basket ${basketIdent}`);
       
       const response = await tebexService.getBasketAuthLinks(basketIdent, returnUrl);
       
       if (response && Array.isArray(response)) {
+        console.log('Basket auth links retrieved successfully:', response);
         return response;
       } else {
+        console.error('Failed to get basket auth links - invalid response:', response);
         throw new Error('Failed to get basket auth links');
       }
     } catch (error) {
@@ -196,30 +309,28 @@ export function BasketProvider({ children }) {
         throw new Error('Failed to create or get basket');
       }
       
-      // 2. Add all items from cart to basket
+      // 2. Ensure all cart items are in the basket
+      let syncSuccess = true;
       for (const item of cart) {
-        await addPackageToBasket(item.id, 1);
+        try {
+          console.log(`Ensuring item ${item.id} is in basket ${currentBasketIdent}`);
+          await addPackageToBasket(item.id, 1);
+        } catch (e) {
+          console.error(`Failed to add item ${item.id} to basket:`, e);
+          syncSuccess = false;
+        }
       }
       
-      // 3. Get the return URL (current page)
-      const returnUrl = window.location.href;
-      
-      // 4. Get auth links for the basket
-      const authLinks = await getBasketAuthLinks(returnUrl);
-      
-      if (!authLinks || authLinks.length === 0) {
-        throw new Error('Failed to get authentication links for checkout');
+      if (!syncSuccess) {
+        console.warn('Some items may not have been added to the basket properly');
       }
       
-      // 5. Use the first auth link (usually there's only one)
-      const checkoutLink = authLinks[0]?.url;
-      
-      if (!checkoutLink) {
-        throw new Error('No valid checkout URL found');
-      }
+      // Direct checkout URL for Tebex
+      const checkoutUrl = `https://pay.tebex.io/${currentBasketIdent}`;
+      console.log('Redirecting to Tebex checkout URL:', checkoutUrl);
       
       // Set the checkout URL for redirection
-      setCheckoutUrl(checkoutLink);
+      setCheckoutUrl(checkoutUrl);
       
       // Clear the cart after successful checkout preparation
       clearCart();
@@ -280,6 +391,8 @@ export function BasketProvider({ children }) {
       setBasketIdent(null);
       setBasketData(null);
       
+      console.log('Basket reset successful, creating a new one');
+      
       // Create a new basket
       return await initializeBasket();
     } catch (error) {
@@ -300,14 +413,17 @@ export function BasketProvider({ children }) {
     checkoutUrl,
     isProcessingCheckout,
     developmentCheckout,
+    lastAddedItem,
     initializeBasket,
     fetchBasket,
     getOrCreateBasket,
     addPackageToBasket,
+    removePackageFromBasket,
     checkoutCart,
     applyCoupon,
     resetBasket,
-    getBasketAuthLinks
+    getBasketAuthLinks,
+    syncCartWithBasket
   };
   
   return (

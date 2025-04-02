@@ -50,6 +50,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
     if (checkoutUrl) {
       console.log('Checkout URL available, preparing to redirect:', checkoutUrl);
       
+      // Log URL format validation for debugging
+      if (checkoutUrl.startsWith('https://pay.tebex.io/')) {
+        console.log('✅ Correct Tebex checkout URL format detected');
+      } else {
+        console.warn('⚠️ Checkout URL does not match expected format https://pay.tebex.io/{ident}');
+      }
+      
       setCheckoutComplete(true);
       
       // Check if we're in development mode
@@ -166,8 +173,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
           
           if ((isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) || developmentCheckout) {
             console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
-            // For development, just log the redirect but don't navigate away
-            alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
+            
+            // For development, show more information about the URL
+            if (checkoutUrl.startsWith('https://pay.tebex.io/')) {
+              alert('DEVELOPMENT MODE: In production, this would redirect to the correct Tebex format:\n' + checkoutUrl);
+            } else {
+              alert('DEVELOPMENT MODE WARNING: The URL format does not match the expected https://pay.tebex.io/{ident} format.\nCurrent URL: ' + checkoutUrl);
+            }
           } else if (checkoutUrl) {
             // Regular production redirect
             console.log('Manual redirect to:', checkoutUrl);
