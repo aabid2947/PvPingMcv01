@@ -11,7 +11,8 @@ export default function CheckoutModal({ isOpen, onClose }) {
     checkoutCart, 
     checkoutUrl, 
     isProcessingCheckout,
-    resetBasket
+    resetBasket,
+    developmentCheckout
   } = useBasket();
   
   const [username, setUsername] = useState('');
@@ -29,8 +30,21 @@ export default function CheckoutModal({ isOpen, onClose }) {
     }
   }, [isOpen]);
   
-  // Redirect to checkout URL if available
+  // Function to clear form fields and state
+  const clearForm = () => {
+    setUsername('');
+    setEdition('java');
+    setFormErrors({});
+    setCheckoutComplete(false);
+    if (resetBasket) {
+      resetBasket();
+    }
+  };
+  
+  // Update the redirect useEffect with proper setTimeout handling
   useEffect(() => {
+    let redirectTimer = null;
+    
     if (checkoutUrl) {
       console.log('Checkout URL available, preparing to redirect:', checkoutUrl);
       
@@ -41,7 +55,9 @@ export default function CheckoutModal({ isOpen, onClose }) {
                    window.location.hostname === 'localhost' || 
                    window.location.hostname === '127.0.0.1';
       
-      if (isDev && checkoutUrl.includes('mock') || checkoutUrl.includes('example.com')) {
+      const isMockUrl = (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'));
+      
+      if ((isDev && isMockUrl) || developmentCheckout) {
         console.log('Development mode or mock URL detected - simulating redirect');
         // In development with mock URLs, we don't actually redirect
         // This prevents navigating away from the app during testing
@@ -50,13 +66,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
         console.log('In production, would redirect to:', checkoutUrl);
         
         // We can display a message here if needed
-        setTimeout(() => {
+        redirectTimer = setTimeout(() => {
           // After "simulated" checkout, reset so user can continue testing
           clearForm();
         }, 3000);
       } else {
         // Regular production redirect
-        const redirectTimer = setTimeout(() => {
+        redirectTimer = setTimeout(() => {
           console.log('Redirecting to checkout URL:', checkoutUrl);
           try {
             window.location.assign(checkoutUrl);
@@ -72,18 +88,16 @@ export default function CheckoutModal({ isOpen, onClose }) {
             window.open(checkoutUrl, '_self');
           }
         }, 1000);
-        
-        return () => clearTimeout(redirectTimer);
       }
     }
-  }, [checkoutUrl]);
-  
-  // Reset checkout state when modal is closed
-  useEffect(() => {
-    if (!isOpen && checkoutComplete && resetBasket) {
-      resetBasket();
-    }
-  }, [isOpen, checkoutComplete, resetBasket]);
+    
+    // Cleanup function to clear timeout
+    return () => {
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+      }
+    };
+  }, [checkoutUrl, resetBasket, developmentCheckout]);
   
   // Validate form before submission
   const validateForm = () => {
@@ -117,6 +131,51 @@ export default function CheckoutModal({ isOpen, onClose }) {
   // If the modal is not open, don't render anything
   if (!isOpen) return null;
   
+  // Show the mock data message when appropriate in checkout complete view
+  const checkoutCompleteView = (
+    <div className="flex flex-col items-center justify-center py-6 space-y-4">
+      <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+        <Check size={32} className="text-green-500" />
+      </div>
+      <h3 className="text-lg font-medium text-white">
+        {(developmentCheckout || checkoutUrl?.includes('example.com'))
+          ? "Test Checkout Complete"
+          : "Redirecting to payment..."}
+      </h3>
+      <p className="text-neutral-400 text-center text-sm">
+        {(developmentCheckout || checkoutUrl?.includes('example.com'))
+          ? "This is a test checkout. In production, you would be redirected to the payment page. The modal will close in a moment."
+          : "You will be redirected to the payment page in a moment. If you are not redirected, click the button below."}
+      </p>
+      <a 
+        href={checkoutUrl} 
+        onClick={(e) => {
+          e.preventDefault();
+          
+          // Check if we're in development mode
+          const isDev = process.env.NODE_ENV === 'development' || 
+                       window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+          
+          if ((isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) || developmentCheckout) {
+            console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
+            // For development, just log the redirect but don't navigate away
+            alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
+          } else if (checkoutUrl) {
+            // Regular production redirect
+            console.log('Manual redirect to:', checkoutUrl);
+            window.location.assign(checkoutUrl);
+          }
+        }}
+        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+      >
+        {(developmentCheckout || checkoutUrl?.includes('example.com'))
+          ? "Simulate Payment Redirect"
+          : "Continue to Payment"}
+      </a>
+    </div>
+  );
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="relative bg-slate-900 rounded-lg shadow-xl w-full max-w-md p-6 mx-4">
@@ -134,41 +193,7 @@ export default function CheckoutModal({ isOpen, onClose }) {
           <h2 className="text-xl font-semibold text-white">Complete Your Purchase</h2>
           
           {checkoutComplete ? (
-            // Checkout complete view
-            <div className="flex flex-col items-center justify-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Check size={32} className="text-green-500" />
-              </div>
-              <h3 className="text-lg font-medium text-white">Redirecting to payment...</h3>
-              <p className="text-neutral-400 text-center text-sm">
-                You will be redirected to the payment page in a moment. If you are not redirected,
-                click the button below.
-              </p>
-              <a 
-                href={checkoutUrl} 
-                onClick={(e) => {
-                  e.preventDefault();
-                  
-                  // Check if we're in development mode
-                  const isDev = process.env.NODE_ENV === 'development' || 
-                               window.location.hostname === 'localhost' || 
-                               window.location.hostname === '127.0.0.1';
-                  
-                  if (isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) {
-                    console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
-                    // For development, just log the redirect but don't navigate away
-                    alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
-                  } else if (checkoutUrl) {
-                    // Regular production redirect
-                    console.log('Manual redirect to:', checkoutUrl);
-                    window.location.assign(checkoutUrl);
-                  }
-                }}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-              >
-                Continue to Payment
-              </a>
-            </div>
+            checkoutCompleteView
           ) : (
             <>
               {/* Cart summary */}

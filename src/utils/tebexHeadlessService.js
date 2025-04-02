@@ -86,46 +86,66 @@ export const fetchPackages = async () => {
     return getMockPackages();
   }
   
-  console.log(`[API] Attempting to fetch packages with token: ${STORE_TOKEN.substring(0, 4)}...`);
-  
   try {
+    console.log(`[API] Attempting to fetch packages with token: ${STORE_TOKEN.substring(0, 4)}...`);
+    
     // Try the categories endpoint which is more reliable
     const categoriesUrl = `${BASE_URL}/accounts/${STORE_TOKEN}/categories?includePackages=1`;
     console.log(`[API] Fetching from categories endpoint: ${categoriesUrl}`);
     
-    const response = await fetch(categoriesUrl);
-    console.log(`[API] Response status: ${response.status}`);
-    
-    if (!response.ok) {
-      console.error(`[API] Categories endpoint failed with status: ${response.status}`);
-      throw new Error(`Failed to fetch from categories endpoint: ${response.status}`);
+    let response;
+    try {
+      response = await fetch(categoriesUrl);
+      console.log(`[API] Response status: ${response.status}`);
+    } catch (fetchError) {
+      console.error('[API] Network error fetching categories:', fetchError);
+      return getMockPackages();
     }
     
-    const categoriesData = await response.json();
-    console.log('[API] Successfully fetched categories data');
+    // Handle 404 or other error status
+    if (!response.ok) {
+      console.warn(`[API] Categories endpoint failed with status: ${response.status}`);
+      // Don't throw, just return mock data
+      return getMockPackages();
+    }
+    
+    let categoriesData;
+    try {
+      categoriesData = await response.json();
+      console.log('[API] Successfully fetched categories data');
+    } catch (jsonError) {
+      console.error('[API] Error parsing JSON response:', jsonError);
+      return getMockPackages();
+    }
     
     // Extract packages from categories
     const extractedPackages = { data: [] };
     
-    // Handle different possible response structures
-    if (Array.isArray(categoriesData)) {
-      console.log('[API] Processing array of categories');
-      categoriesData.forEach(category => {
-        if (category.packages && Array.isArray(category.packages)) {
-          extractedPackages.data.push(...category.packages);
-        }
-      });
-    } else if (categoriesData.data && Array.isArray(categoriesData.data)) {
-      console.log('[API] Processing categories with data property');
-      categoriesData.data.forEach(category => {
-        if (category.packages && Array.isArray(category.packages)) {
-          extractedPackages.data.push(...category.packages);
-        }
-      });
+    try {
+      // Handle different possible response structures
+      if (Array.isArray(categoriesData)) {
+        console.log('[API] Processing array of categories');
+        categoriesData.forEach(category => {
+          if (category.packages && Array.isArray(category.packages)) {
+            extractedPackages.data.push(...category.packages);
+          }
+        });
+      } else if (categoriesData.data && Array.isArray(categoriesData.data)) {
+        console.log('[API] Processing categories with data property');
+        categoriesData.data.forEach(category => {
+          if (category.packages && Array.isArray(category.packages)) {
+            extractedPackages.data.push(...category.packages);
+          }
+        });
+      }
+      
+      console.log(`[API] Extracted ${extractedPackages.data.length} packages from categories`);
+    } catch (processingError) {
+      console.error('[API] Error processing categories data:', processingError);
+      return getMockPackages();
     }
     
-    console.log(`[API] Extracted ${extractedPackages.data.length} packages from categories`);
-    
+    // If no packages were found, return mock data
     if (extractedPackages.data.length === 0) {
       console.warn('[API] No packages found in categories response, using mock data');
       return getMockPackages();
@@ -133,8 +153,8 @@ export const fetchPackages = async () => {
     
     return extractedPackages;
   } catch (error) {
-    console.error('[API] Error fetching packages:', error);
-    console.log('[PROD] Falling back to mock package data after error');
+    // Catch any other errors and return mock data
+    console.error('[API] Error in fetchPackages:', error);
     return getMockPackages();
   }
 };
@@ -218,19 +238,50 @@ export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) =
  * @returns {Promise<Object>} Basket data
  */
 export const getBasket = async (basketIdent) => {
+  // In development, always use mock data
+  if (isDevelopment) {
+    console.log('[DEV] Using mock basket data');
+    return getMockBasketById(basketIdent);
+  }
+  
+  // If no basketIdent provided, return mock data
+  if (!basketIdent) {
+    console.warn('[API] No basketIdent provided to getBasket');
+    return getMockBasketById('mock-basket');
+  }
+  
   try {
-    if (isDevelopment) {
+    console.log(`[API] Fetching basket with ID: ${basketIdent}`);
+    
+    let response;
+    try {
+      const url = `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}`;
+      console.log(`[API] GET ${url}`);
+      response = await fetch(url);
+      console.log(`[API] Basket response status: ${response.status}`);
+    } catch (fetchError) {
+      console.error('[API] Network error fetching basket:', fetchError);
       return getMockBasketById(basketIdent);
     }
-
-    const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}`);
+    
     if (!response.ok) {
-      throw new Error(`Failed to get basket: ${response.status}`);
+      console.warn(`[API] Failed to get basket with status: ${response.status}`);
+      // Don't throw, just return mock data
+      return getMockBasketById(basketIdent);
     }
-    return await response.json();
+    
+    let basketData;
+    try {
+      basketData = await response.json();
+      console.log('[API] Successfully fetched basket data');
+    } catch (jsonError) {
+      console.error('[API] Error parsing basket JSON response:', jsonError);
+      return getMockBasketById(basketIdent);
+    }
+    
+    return basketData;
   } catch (error) {
-    console.error('Error getting basket:', error);
-    // Return mock basket in case of error
+    console.error('[API] Error in getBasket:', error);
     return getMockBasketById(basketIdent);
   }
 };
