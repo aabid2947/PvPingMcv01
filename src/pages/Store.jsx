@@ -35,7 +35,6 @@ export function StoreProvider({ children }) {
           setCategories(data.categories);
         }
       } catch (error) {
-        console.error('Error loading store categories:', error);
         setError('Failed to load store categories');
       }
     };
@@ -60,11 +59,9 @@ export function StoreProvider({ children }) {
         let sortedPackages = {};
         
         try {
-          console.log('Fetching packages from Tebex API...');
           packageData = await tebexHeadlessService.fetchPackages();
           
           if (!packageData) {
-            console.warn('No package data received from API');
             throw new Error('No package data received');
           }
           
@@ -75,7 +72,6 @@ export function StoreProvider({ children }) {
                             packageData.data.some(pkg => pkg.id && pkg.id.toString().includes('mock'));
           
           if (isMockData) {
-            console.log('Detected mock data in production - API may be down');
             setError('Store data temporarily unavailable. Showing placeholder content.');
           }
           
@@ -85,14 +81,12 @@ export function StoreProvider({ children }) {
           
           // Ensure formattedPackages is an array before categorizing
           if (!Array.isArray(formattedPackages)) {
-            console.warn('Formatted packages is not an array', formattedPackages);
             formattedPackages = [];
           }
           
           // Categorize packages - ensure we pass an array to categorizePackages
           sortedPackages = categorizePackages(formattedPackages, fetchedCategories);
         } catch (packageError) {
-          console.error('Error loading packages:', packageError);
           formattedPackages = [];
           sortedPackages = {
             uncategorized: {
@@ -118,7 +112,6 @@ export function StoreProvider({ children }) {
           }
         });
       } catch (error) {
-        console.error('Error in loadPackagesAndCategories:', error);
         setError('Failed to load store. Please try again later.');
       } finally {
         setLoading(false);
@@ -137,7 +130,6 @@ export function StoreProvider({ children }) {
       // Ensure packages is an array before re-categorizing
       let packagesToUse = packages;
       if (!Array.isArray(packagesToUse)) {
-        console.warn('Packages is not an array during refresh', packagesToUse);
         packagesToUse = [];
       }
       
@@ -150,7 +142,6 @@ export function StoreProvider({ children }) {
       
       return true;
     } catch (error) {
-      console.error('Failed to refresh categories:', error);
       return false;
     }
   };
@@ -159,7 +150,6 @@ export function StoreProvider({ children }) {
   const formatPackagesForDisplay = (packageData) => {
     // Handle undefined or null packageData
     if (!packageData) {
-      console.warn('Package data is undefined or null', packageData);
       return [];
     }
     
@@ -192,7 +182,6 @@ export function StoreProvider({ children }) {
     }
     
     // If we get here, we don't recognize the format
-    console.warn('Unrecognized package data format', packageData);
     return [];
   };
 
@@ -225,7 +214,6 @@ export function StoreProvider({ children }) {
         currency: currency || 'USD'
       }).format(numericPrice);
     } catch (error) {
-      console.error('Error formatting price:', error);
       return `$${numericPrice.toFixed(2)}`;
     }
   };
@@ -351,7 +339,6 @@ export default function Store() {
   useEffect(() => {
     if (basketContext && !isContextConnected) {
       connectToBasketContext(basketContext);
-      console.log('Connected Cart context to Basket context');
       setIsContextConnected(true);
     }
   }, [basketContext, connectToBasketContext, isContextConnected]);
@@ -418,12 +405,9 @@ export default function Store() {
         const basketId = await basketContext.getOrCreateBasket();
         
         if (!basketId) {
-          console.error('Failed to get or create basket');
           setBasketError('Failed to initialize your shopping cart. Please try again.');
           return;
         }
-        
-        console.log(`Adding item to cart with valid basket ID: ${basketId}`);
         
         // Format the package data for the cart
         const cartItem = {
@@ -441,13 +425,9 @@ export default function Store() {
           
           // If this succeeds (no auth redirect), add to cart
           if (addResult) {
-            console.log('Package added to basket, adding to cart:', cartItem);
             addToCart(cartItem);
-          } else {
-            console.log('Package not added to cart - possible auth redirect or error');
           }
         } catch (basketError) {
-          console.error('Error adding package to basket:', basketError);
           setBasketError('Failed to add item to your shopping cart. Please try again.');
         }
       } else {
@@ -461,7 +441,6 @@ export default function Store() {
         });
       }
     } catch (error) {
-      console.error('Error during add to cart:', error);
       setBasketError('Failed to add item to cart. Please try again.');
     }
   };

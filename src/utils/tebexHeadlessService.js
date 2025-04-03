@@ -12,7 +12,6 @@ const STORE_ID = import.meta.env.VITE_TEBEX_STORE_ID ;
 
 // Generate a unique token for the store (this should be stored in your environment variables in production)
 const STORE_TOKEN = import.meta.env.VITE_TEBEX_API_KEY ; // Use actual API key if available
-console.log(STORE_TOKEN);
 
 // Base URL for Tebex Headless API
 const BASE_URL = 'https://headless.tebex.io/api';
@@ -50,11 +49,8 @@ const safeApiCall = async (apiCall, mockDataFn, ...args) => {
     
     // In development mode, use mock data if specified
     if (isDevMode) {
-      console.log(`[Tebex] Using mock data for ${apiCall.name || 'API call'} (development mode)`);
       return mockDataFn(...args);
     }
-
-    console.log(`[Tebex] Making real API call to ${apiCall.name || 'endpoint'}`);
     
     // Make the actual API call
     const response = await apiCall(...args);
@@ -66,11 +62,8 @@ const safeApiCall = async (apiCall, mockDataFn, ...args) => {
     
     return response;
   } catch (error) {
-    console.error(`[Tebex] API call error: ${error.message}`);
-    
     // Always fall back to mock data on error, even in production
     // This ensures the store can function even when the API is down
-    console.log(`[Tebex] Falling back to mock data after API error`);
     return mockDataFn(...args);
   }
 };
@@ -84,18 +77,15 @@ export const fetchCategories = async () => {
     const isDevMode = isDevelopment && !forceProduction();
     
     if (isDevMode) {
-      console.log('[Tebex] Using mock categories data (development mode)');
       return getMockCategories();
     }
 
-    console.log('[Tebex] Fetching categories from API');
     const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/categories?includePackages=1`);
     if (!response.ok) {
       throw new Error(`Failed to fetch categories: ${response.status}`);
     }
     return await response.json();
   } catch (error) {
-    console.error('[Tebex] Error fetching categories:', error);
     // Return mock data in case of error
     return getMockCategories();
   }
@@ -111,29 +101,22 @@ export const fetchPackages = async () => {
   
   // In development, always use mock data
   if (isDevMode) {
-    console.log('[Tebex] Using mock package data (development mode)');
     return getMockPackages();
   }
   
   try {
-    console.log(`[Tebex] Attempting to fetch packages from API with token: ${STORE_TOKEN}`);
-    
     // Try the categories endpoint which is more reliable
     const categoriesUrl = `${BASE_URL}/accounts/${STORE_TOKEN}/categories?includePackages=1`;
-    console.log(`[Tebex] Fetching from categories endpoint: ${categoriesUrl}`);
     
     let response;
     try {
       response = await fetch(categoriesUrl);
-      console.log(`[Tebex] Response status: ${response.status}`);
     } catch (fetchError) {
-      console.error('[Tebex] Network error fetching categories:', fetchError);
       return getMockPackages();
     }
     
     // Handle 404 or other error status
     if (!response.ok) {
-      console.warn(`[Tebex] Categories endpoint failed with status: ${response.status}`);
       // Don't throw, just return mock data
       return getMockPackages();
     }
@@ -141,9 +124,7 @@ export const fetchPackages = async () => {
     let categoriesData;
     try {
       categoriesData = await response.json();
-      console.log('[Tebex] Successfully fetched categories data');
     } catch (jsonError) {
-      console.error('[Tebex] Error parsing JSON response:', jsonError);
       return getMockPackages();
     }
     
@@ -153,37 +134,30 @@ export const fetchPackages = async () => {
     try {
       // Handle different possible response structures
       if (Array.isArray(categoriesData)) {
-        console.log('[Tebex] Processing array of categories');
         categoriesData.forEach(category => {
           if (category.packages && Array.isArray(category.packages)) {
             extractedPackages.data.push(...category.packages);
           }
         });
       } else if (categoriesData.data && Array.isArray(categoriesData.data)) {
-        console.log('[Tebex] Processing categories with data property');
         categoriesData.data.forEach(category => {
           if (category.packages && Array.isArray(category.packages)) {
             extractedPackages.data.push(...category.packages);
           }
         });
       }
-      
-      console.log(`[Tebex] Extracted ${extractedPackages.data.length} packages from categories`);
     } catch (processingError) {
-      console.error('[Tebex] Error processing categories data:', processingError);
       return getMockPackages();
     }
     
     // If no packages were found, return mock data
     if (extractedPackages.data.length === 0) {
-      console.warn('[Tebex] No packages found in categories response, using mock data');
       return getMockPackages();
     }
     
     return extractedPackages;
   } catch (error) {
     // Catch any other errors and return mock data
-    console.error('[Tebex] Error in fetchPackages:', error);
     return getMockPackages();
   }
 };
@@ -194,51 +168,43 @@ export const fetchPackages = async () => {
  * @param {string} cancelUrl - URL to redirect after canceled checkout
  * @returns {Promise<Object>} Basket data
  */
-export const createBasket = async (completeUrl, cancelUrl,username) => {
+export const createBasket = async (completeUrl, cancelUrl, username) => {
   try {
     // Check if we're in development mode and not forcing production
-    console.log(username)
     const isDevMode = isDevelopment && !forceProduction();
-    console.log(`[Tebex] Environment: ${isDevMode ? 'DEVELOPMENT' : 'PRODUCTION'}`);
     
     if (isDevMode) {
-      console.log('[Tebex] Using mock basket in development mode');
-      return getMockBasket(completeUrl, cancelUrl);
+      return getMockBasket();
     }
-
-    console.log('[Tebex] Creating real basket with Tebex API:',username);
+    
+    // Create a new basket
+    const basketData = {
+      return_url: completeUrl || window.location.href,
+      cancel_url: cancelUrl || window.location.href
+    };
+    
+    // Add username if provided
+    if (username) {
+      basketData.ign = username;
+    }
+    
+    // Make the API call
     const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/baskets`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body:JSON.stringify({
-        "complete_url": completeUrl,
-        "cancel_url": cancelUrl,
-        "complete_auto_redirect": true,
-        "username":username
-      })
-
-      
+      body: JSON.stringify(basketData)
     });
-
-    console.log(response.json);
-
-
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Tebex] Basket creation failed with status ${response.status}: ${errorText}`);
-      throw new Error(`Failed to create basket: ${response.status} ${errorText}`);
+      throw new Error(`Failed to create basket: ${response.status}`);
     }
     
-    const data = await response.json();
-    console.log('[Tebex] Basket created successfully:', data);
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error('[Tebex] Error creating basket:', error);
-    // Return mock basket in case of error
-    console.log('[Tebex] Falling back to mock basket due to error');
-    return getMockBasket(completeUrl, cancelUrl);
+    // Return mock data in case of error
+    return getMockBasket();
   }
 };
 
@@ -408,7 +374,6 @@ export const handleAuthenticationReturn = async () => {
     // Return the result
     return result;
   } catch (error) {
-    console.error('[Tebex] Error handling authentication return:', error);
     // Clear the pending operation on error
     localStorage.removeItem('tebex_pending_operation');
     return null;
@@ -417,388 +382,265 @@ export const handleAuthenticationReturn = async () => {
 
 /**
  * Add a package to a basket
- * @param {string} basketIdent - Basket identifier
- * @param {string} packageId - Package ID to add
- * @param {number} quantity - Quantity of the package
- * @returns {Promise<Object>} Updated basket
+ * @param {string} basketIdent - The basket identifier
+ * @param {string} packageId - The package ID to add
+ * @param {number} quantity - The quantity to add
+ * @returns {Promise<Object>} Updated basket data
  */
-export const addPackageToBasket = async (basketIdent, packageId, quantity = 1, returnUrl = window.location.href) => {
+export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) => {
   try {
-    const isDevMode = isDevelopment && !forceProduction();
-    
-    if (isDevMode) {
-      console.log('[Tebex] Using mock addPackageToBasket (development mode)');
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
+      // Create a mock basket with the package added
       return getMockBasketWithPackage(basketIdent, packageId, quantity);
     }
-
-    console.log(`[Tebex] Adding package ${packageId} to basket ${basketIdent}`);
-    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/packages`, {
+    
+    // Make the API call to add the package
+    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/packages/add`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         package_id: packageId,
         quantity: quantity
       })
     });
-
-    // Check for authentication required response (422 error)
-    if (response.status === 422) {
-      const errorData = await response.json();
-      console.log('[Tebex] Authentication error:', errorData);
-      
-      // If the error indicates authentication is required
-      if (errorData?.error?.toLowerCase().includes('login') || 
-          errorData?.error?.toLowerCase().includes('auth')) {
-        console.log('[Tebex] User must authenticate before adding packages to basket');
-        
-        // Store the operation details for after authentication
-        localStorage.setItem('tebex_pending_operation', JSON.stringify({
-          type: 'add_package',
-          basketIdent,
-          packageId,
-          quantity,
-          returnUrl
-        }));
-        
-        // Get authentication links
-        const authLinks = await getBasketAuthLinks(basketIdent, returnUrl);
-        
-        if (authLinks && authLinks.length > 0) {
-          console.log('[Tebex] Redirecting to authentication page:', authLinks[0].url);
-          
-          // Return special object indicating auth redirect
-          return {
-            requires_auth: true,
-            auth_url: authLinks[0].url,
-            message: 'Authentication required before adding to basket'
-          };
-        }
-      }
-      
-      // If it's a different 422 error, just throw it
-      throw new Error(`Failed to add package to basket: ${errorData.error || response.status}`);
-    }
-
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Tebex] Failed to add package: ${response.status} ${errorText}`);
-      throw new Error(`Failed to add package to basket: ${response.status}`);
+      throw new Error(`Failed to add package: ${response.status}`);
     }
     
+    // Parse and return the updated basket data
     const data = await response.json();
-    console.log('[Tebex] Package added successfully');
     return data;
   } catch (error) {
-    console.error('[Tebex] Error adding package to basket:', error);
     // Return mock updated basket in case of error
-    console.log('[Tebex] Falling back to mock basket with package');
     return getMockBasketWithPackage(basketIdent, packageId, quantity);
   }
 };
 
 /**
  * Remove a package from a basket
- * @param {string} basketIdent - Basket identifier
- * @param {string} packageId - Package ID to remove
- * @param {string} returnUrl - URL to return to after authentication
- * @returns {Promise<Object>} Updated basket
+ * @param {string} basketIdent - The basket identifier
+ * @param {string} packageId - The package ID to remove
+ * @returns {Promise<Object>} Updated basket data
  */
-export const removePackageFromBasket = async (basketIdent, packageId, returnUrl = window.location.href) => {
+export const removePackageFromBasket = async (basketIdent, packageId) => {
   try {
-    const isDevMode = isDevelopment && !forceProduction();
-    
-    if (isDevMode) {
-      console.log('[Tebex] Using mock removePackageFromBasket (development mode)');
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
+      // Create a mock basket with the package removed
       return getMockBasketWithoutPackage(basketIdent, packageId);
     }
-
-    console.log(`[Tebex] Removing package ${packageId} from basket ${basketIdent}`);
+    
+    // Make the API call to remove the package
     const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/packages/remove`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         package_id: packageId
       })
     });
-
-    // Check for authentication required response (422 error)
-    if (response.status === 422) {
-      const errorData = await response.json();
-      console.log('[Tebex] Authentication error:', errorData);
-      
-      // If the error indicates authentication is required
-      if (errorData?.error?.toLowerCase().includes('login') || 
-          errorData?.error?.toLowerCase().includes('auth')) {
-        console.log('[Tebex] User must authenticate before removing packages from basket');
-        
-        // Store the operation details for after authentication
-        localStorage.setItem('tebex_pending_operation', JSON.stringify({
-          type: 'remove_package',
-          basketIdent,
-          packageId,
-          returnUrl
-        }));
-        
-        // Get authentication links
-        const authLinks = await getBasketAuthLinks(basketIdent, returnUrl);
-        
-        if (authLinks && authLinks.length > 0) {
-          console.log('[Tebex] Redirecting to authentication page:', authLinks[0].url);
-          
-          // Return special object indicating auth redirect
-          return {
-            requires_auth: true,
-            auth_url: authLinks[0].url,
-            message: 'Authentication required before removing from basket'
-          };
-        }
-      }
-      
-      // If it's a different 422 error, just throw it
-      throw new Error(`Failed to remove package from basket: ${errorData.error || response.status}`);
-    }
-
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Tebex] Failed to remove package: ${response.status} ${errorText}`);
-      throw new Error(`Failed to remove package from basket: ${response.status}`);
+      throw new Error(`Failed to remove package: ${response.status}`);
     }
     
+    // Parse and return the updated basket data
     const data = await response.json();
-    console.log('[Tebex] Package removed successfully');
     return data;
   } catch (error) {
-    console.error('[Tebex] Error removing package from basket:', error);
     // Return mock updated basket in case of error
-    console.log('[Tebex] Falling back to mock basket without package');
     return getMockBasketWithoutPackage(basketIdent, packageId);
   }
 };
 
 /**
- * Get basket by ID
- * @param {string} basketIdent - Basket identifier
+ * Get current basket data
+ * @param {string} basketIdent - The basket identifier
  * @returns {Promise<Object>} Basket data
  */
 export const getBasket = async (basketIdent) => {
-  // Check if we're in development mode and not forcing production
-  const isDevMode = isDevelopment && !forceProduction();
-  
-  // In development, always use mock data
-  if (isDevMode) {
-    console.log('[Tebex] Using mock basket data (development mode)');
-    return getMockBasketById(basketIdent);
-  }
-  
-  // If no basketIdent provided, return mock data
-  if (!basketIdent) {
-    console.warn('[Tebex] No basketIdent provided to getBasket');
-    return getMockBasketById('mock-basket');
-  }
-  
   try {
-    console.log(`[Tebex] Fetching basket with ID: ${basketIdent}`);
-    
-    let response;
-    try {
-      const url = `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}`;
-      console.log(`[Tebex] GET ${url}`);
-      response = await fetch(url);
-      console.log(`[Tebex] Basket response status: ${response.status}`);
-    } catch (fetchError) {
-      console.error('[Tebex] Network error fetching basket:', fetchError);
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
       return getMockBasketById(basketIdent);
     }
+    
+    // Make the API call to get the basket
+    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}`);
     
     if (!response.ok) {
-      console.warn(`[Tebex] Failed to get basket with status: ${response.status}`);
-      // Don't throw, just return mock data
-      return getMockBasketById(basketIdent);
+      throw new Error(`Failed to get basket: ${response.status}`);
     }
     
-    let basketData;
-    try {
-      basketData = await response.json();
-      console.log('[Tebex] Successfully fetched basket data');
-    } catch (jsonError) {
-      console.error('[Tebex] Error parsing basket JSON response:', jsonError);
-      return getMockBasketById(basketIdent);
-    }
-    
+    // Parse and return the basket data
+    const basketData = await response.json();
     return basketData;
   } catch (error) {
-    console.error('[Tebex] Error in getBasket:', error);
     return getMockBasketById(basketIdent);
   }
+};
+
+/**
+ * Force production mode for testing
+ */
+export const forceProductionMode = () => {
+  // Set a URL parameter to force production mode
+  const url = new URL(window.location.href);
+  url.searchParams.set('force_production', 'true');
+  window.history.replaceState({}, document.title, url.toString());
 };
 
 /**
  * Get authentication links for a basket
- * @param {string} basketIdent - Basket identifier
- * @param {string} returnUrl - URL to return to after authentication
- * @returns {Promise<Array>} Auth links
+ * @param {string} basketIdent - The basket identifier
+ * @returns {Promise<Object>} Authentication links
  */
-export const getBasketAuthLinks = async (basketIdent, returnUrl = window.location.href) => {
+export const getAuthLinks = async (basketIdent) => {
   try {
-    const isDevMode = isDevelopment && !forceProduction();
-    
-    if (isDevMode) {
-      console.log('[Tebex] Using mock auth links (development mode)');
-      return getMockAuthLinks(basketIdent, returnUrl);
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
+      // Create mock auth links
+      return {
+        links: {
+          steam: `https://example.com/mock-auth/steam?basket=${basketIdent}`,
+          microsoft: `https://example.com/mock-auth/microsoft?basket=${basketIdent}`
+        }
+      };
     }
-
-    console.log(`[Tebex] Getting auth links for basket ${basketIdent} with return URL ${returnUrl}`);
     
-    // Encode returnUrl properly
-    const encodedReturnUrl = encodeURIComponent(returnUrl);
-    
-    const response = await fetch(
-      `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}/auth?returnUrl=${encodedReturnUrl}`
-    );
+    // Make the API call to get auth links
+    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/auth`);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Tebex] Failed to get auth links: ${response.status} ${errorText}`);
       throw new Error(`Failed to get auth links: ${response.status}`);
     }
     
+    // Parse and return the auth links
     const data = await response.json();
-    console.log('[Tebex] Successfully retrieved auth links:', data);
     return data;
   } catch (error) {
-    console.error('[Tebex] Error getting auth links:', error);
     // Return mock auth links in case of error
-    console.log('[Tebex] Falling back to mock auth links');
-    return getMockAuthLinks(basketIdent, returnUrl);
+    return {
+      links: {
+        steam: `https://example.com/mock-auth/steam?basket=${basketIdent}`,
+        microsoft: `https://example.com/mock-auth/microsoft?basket=${basketIdent}`
+      }
+    };
   }
 };
 
-function getMockAuthLinks(basketIdent, returnUrl) {
-  const mockBasketIdent = basketIdent || `mock-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  
-  // Include returnUrl in the auth URL if provided
-  const authUrl = returnUrl 
-    ? `https://auth.tebex.io/login/minecraft?basket=${mockBasketIdent}&return=${encodeURIComponent(returnUrl)}`
-    : `https://auth.tebex.io/login/minecraft?basket=${mockBasketIdent}`;
-    
-  return [
-    {
-      name: "Minecraft",
-      url: authUrl
-    }
-  ];
-}
-
 /**
- * Process checkout with Minecraft username
- * @param {string} basketIdent - Basket identifier
- * @param {string} username - Minecraft username
- * @param {string} edition - Minecraft edition (java/bedrock)
- * @returns {Promise<Object>} Checkout information
+ * Process checkout for a basket
+ * @param {string} basketIdent - The basket identifier
+ * @param {string} username - The Minecraft username
+ * @param {string} edition - The Minecraft edition (java/bedrock)
+ * @returns {Promise<Object>} Checkout data including URL
  */
-export const processCheckout = async (basketIdent, username, edition) => {
+export const processCheckout = async (basketIdent, username, edition = 'java') => {
   try {
-    console.log(`[Tebex] Processing checkout for ${username} (${edition})`);
-    
-    // Check if we're in development mode and not forcing production
-    const isDevMode = isDevelopment && !forceProduction();
-    
-    // In development, always use mock checkout
-    if (isDevMode) {
-      console.log('[Tebex] Using mock checkout data (development mode)');
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
       return getMockCheckout(username, edition);
     }
     
-    // If no basketIdent or API errors previously, create a new mock checkout in production
-    if (!basketIdent) {
-      console.log('[Tebex] No basketIdent provided, using mock checkout');
-      return getMockCheckout(username, edition);
-    }
-    
-    // Try to get the current basket
     try {
-      const basketResponse = await getBasket(basketIdent);
+      // First, make sure we have the basket
+      const basket = await getBasket(basketIdent);
       
-      // Check if we have a valid basket response
-      if (basketResponse?.data?.ident) {
-        const checkoutIdent = basketResponse.data.ident;
-        console.log('[Tebex] Got valid basket ident for checkout:', checkoutIdent);
-        
-        // Return checkout data with the basket ident for Tebex.js
-        return {
-          success: true,
-          basketIdent: checkoutIdent,
-          username: username,
-          edition: edition,
-          ident: checkoutIdent, // Used by Tebex.js
-          message: "Checkout ready"
-        };
-      } else {
-        // No valid ident in response, use mock data
-        console.log('[Tebex] No valid ident in basket response, using mock checkout');
-        return getMockCheckout(username, edition);
+      if (!basket || !basket.packages || basket.packages.length === 0) {
+        throw new Error('Basket is empty or invalid');
       }
+      
+      // Make the API call to create a checkout
+      const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ign: username,
+          fields: [
+            {
+              identifier: 'ign',
+              value: username
+            },
+            {
+              identifier: 'bedrock_account',
+              value: edition === 'bedrock' ? 'Yes' : 'No'
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to process checkout: ${response.status}`);
+      }
+      
+      // Parse and return the checkout data
+      const data = await response.json();
+      return data;
     } catch (basketError) {
-      console.error('[Tebex] Error getting basket for checkout:', basketError);
       // Fall back to mock checkout
-      console.log('[Tebex] Error getting basket, using mock checkout');
       return getMockCheckout(username, edition);
     }
   } catch (error) {
-    console.error('[Tebex] Error processing checkout:', error);
     // Always return mock checkout data on error
-    console.log('[Tebex] Error in processCheckout, using mock checkout');
     return getMockCheckout(username, edition);
   }
 };
 
 /**
  * Apply a coupon to a basket
- * @param {string} basketIdent - Basket identifier
- * @param {string} couponCode - Coupon code to apply
- * @returns {Promise<Object>} Updated basket
+ * @param {string} basketIdent - The basket identifier
+ * @param {string} couponCode - The coupon code to apply
+ * @returns {Promise<Object>} Updated basket data
  */
 export const applyCoupon = async (basketIdent, couponCode) => {
   try {
-    const isDevMode = isDevelopment && !forceProduction();
-    
-    if (isDevMode) {
-      console.log('[Tebex] Using mock applyCoupon (development mode)');
-      return getMockBasketWithCoupon(basketIdent, couponCode);
+    // In development mode, return mock data
+    if (isDevelopment && !forceProduction()) {
+      // Create a mock basket with the coupon applied
+      const mockBasket = getMockBasketById(basketIdent);
+      mockBasket.coupon = {
+        code: couponCode,
+        discount: '5.00',
+        discount_percentage: 10
+      };
+      return mockBasket;
     }
-
-    console.log(`[Tebex] Applying coupon ${couponCode} to basket ${basketIdent}`);
-    const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}/coupons`, {
+    
+    // Make the API call to apply the coupon
+    const response = await fetch(`${BASE_URL}/baskets/${basketIdent}/coupons`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        coupon_code: couponCode
+        code: couponCode
       })
     });
-
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Tebex] Failed to apply coupon: ${response.status} ${errorText}`);
       throw new Error(`Failed to apply coupon: ${response.status}`);
     }
     
+    // Parse and return the updated basket data
     const data = await response.json();
-    console.log('[Tebex] Coupon applied successfully');
     return data;
   } catch (error) {
-    console.error('[Tebex] Error applying coupon:', error);
     // Return mock updated basket in case of error
-    console.log('[Tebex] Falling back to mock basket with coupon');
-    return getMockBasketWithCoupon(basketIdent, couponCode);
+    const mockBasket = getMockBasketById(basketIdent);
+    mockBasket.coupon = {
+      code: couponCode,
+      discount: '5.00',
+      discount_percentage: 10
+    };
+    return mockBasket;
   }
 };
 

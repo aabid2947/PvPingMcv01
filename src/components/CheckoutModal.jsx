@@ -32,14 +32,10 @@ export default function CheckoutModal({ isOpen, onClose }) {
   useEffect(() => {
     // Only fetch basket data once when the modal opens
     if (isOpen && basketIdent && !hasInitiallyFetchedBasket) {
-      console.log('Fetching basket data once on modal open');
-      
       setHasInitiallyFetchedBasket(true);
       
-      fetchBasket(basketIdent).then(data => {
-        console.log('Initial basket fetch complete');
-      }).catch(err => {
-        console.error('Error fetching basket on modal open:', err);
+      fetchBasket(basketIdent).catch(() => {
+        // Silently handle error
       });
     }
     

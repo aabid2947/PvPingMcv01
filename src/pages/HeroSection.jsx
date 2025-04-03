@@ -29,7 +29,7 @@ export default function OriginMC() {
       try {
         setIsPlayerCountLoading(true);
         const response = await axios.get('https://api.mcsrvstat.us/3/play.pvpingmc.net');
-        console.log(response.data)
+
 
         // Check if the server is online and has player data
         if (response.data && response.data.online) {
