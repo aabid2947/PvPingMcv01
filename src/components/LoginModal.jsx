@@ -89,7 +89,7 @@ function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         className="bg-[#1D1E29] text-zinc-200 rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden transform transition-all"
       >
         <div className="flex justify-between items-center p-5 border-b">
-          <h3 className="text-xl font-semibold">Enter Your Minecraft Username</h3>
+          <h3 className="text-xl font-semibold">Login Required</h3>
           {!isProcessing && (
             <button
               onClick={onClose}
@@ -105,14 +105,18 @@ function LoginModal({ isOpen, onClose, onLoginSuccess }) {
             <div className="flex flex-col items-center justify-center py-6">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
               <p className="mt-4 text-center text-zinc-300">
-                Saving your username and preparing your cart...
+                Saving your username...
               </p>
               <p className="mt-2 text-sm text-center text-zinc-400">
-                The page will refresh automatically in a moment.
+                The page will refresh. You can add items to your cart after login.
               </p>
             </div>
           ) : (
             <>
+              <p className="mb-4 text-zinc-400">
+                Please enter your Minecraft username to continue. You must be logged in before adding items to your cart.
+              </p>
+              
               <div className="mb-4">
                 <label htmlFor="username" className="block text-sm font-medium mb-1">
                   Minecraft Username
@@ -177,7 +181,7 @@ function LoginModal({ isOpen, onClose, onLoginSuccess }) {
                   type="submit"
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
-                  Continue to Purchase
+                  Login & Continue
                 </button>
               </div>
             </>

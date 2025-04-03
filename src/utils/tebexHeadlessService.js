@@ -194,10 +194,10 @@ export const fetchPackages = async () => {
  * @param {string} cancelUrl - URL to redirect after canceled checkout
  * @returns {Promise<Object>} Basket data
  */
-export const createBasket = async (completeUrl, cancelUrl) => {
+export const createBasket = async (completeUrl, cancelUrl,username) => {
   try {
     // Check if we're in development mode and not forcing production
-    console.log(99)
+    console.log(username)
     const isDevMode = isDevelopment && !forceProduction();
     console.log(`[Tebex] Environment: ${isDevMode ? 'DEVELOPMENT' : 'PRODUCTION'}`);
     
@@ -206,16 +206,23 @@ export const createBasket = async (completeUrl, cancelUrl) => {
       return getMockBasket(completeUrl, cancelUrl);
     }
 
-    console.log('[Tebex] Creating real basket with Tebex API');
+    console.log('[Tebex] Creating real basket with Tebex API:',username);
     const response = await fetch(`${BASE_URL}/accounts/${STORE_TOKEN}/baskets`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      body:JSON.stringify({
+        "complete_url": completeUrl,
+        "cancel_url": cancelUrl,
+        "complete_auto_redirect": true,
+        "username":username
+      })
+
       
     });
 
-    console.log(response.data);
+    console.log(response.json);
 
 
     if (!response.ok) {
@@ -236,13 +243,186 @@ export const createBasket = async (completeUrl, cancelUrl) => {
 };
 
 /**
+ * Tebex authentication flow utilities
+ */
+
+// Key for storing pending basket operations in localStorage
+const PENDING_BASKET_OP_KEY = 'tebex_pending_basket_operation';
+const PENDING_BASKET_ID_KEY = 'tebex_pending_basket_id';
+const PENDING_PACKAGE_ID_KEY = 'tebex_pending_package_id';
+const PENDING_RETURN_URL_KEY = 'tebex_pending_return_url';
+
+/**
+ * Store pending basket operation information for after authentication
+ * @param {Object} operation - Operation details (type, basketIdent, packageId, quantity)
+ */
+export const storePendingBasketOperation = (operation) => {
+  try {
+    localStorage.setItem(PENDING_BASKET_OP_KEY, operation.type);
+    
+    if (operation.basketIdent) {
+      localStorage.setItem(PENDING_BASKET_ID_KEY, operation.basketIdent);
+    }
+    
+    if (operation.packageId) {
+      localStorage.setItem(PENDING_PACKAGE_ID_KEY, operation.packageId);
+    }
+    
+    if (operation.returnUrl) {
+      localStorage.setItem(PENDING_RETURN_URL_KEY, operation.returnUrl);
+    }
+    
+    console.log('[Tebex] Stored pending basket operation:', operation);
+  } catch (error) {
+    console.error('[Tebex] Error storing pending basket operation:', error);
+  }
+};
+
+/**
+ * Retrieve pending basket operation information
+ * @returns {Object|null} Pending operation or null if none exists
+ */
+export const getPendingBasketOperation = () => {
+  try {
+    const operationType = localStorage.getItem(PENDING_BASKET_OP_KEY);
+    
+    if (!operationType) {
+      return null;
+    }
+    
+    const operation = {
+      type: operationType,
+      basketIdent: localStorage.getItem(PENDING_BASKET_ID_KEY),
+      packageId: localStorage.getItem(PENDING_PACKAGE_ID_KEY),
+      returnUrl: localStorage.getItem(PENDING_RETURN_URL_KEY)
+    };
+    
+    console.log('[Tebex] Retrieved pending basket operation:', operation);
+    return operation;
+  } catch (error) {
+    console.error('[Tebex] Error retrieving pending basket operation:', error);
+    return null;
+  }
+};
+
+/**
+ * Clear pending basket operation information
+ */
+export const clearPendingBasketOperation = () => {
+  try {
+    localStorage.removeItem(PENDING_BASKET_OP_KEY);
+    localStorage.removeItem(PENDING_BASKET_ID_KEY);
+    localStorage.removeItem(PENDING_PACKAGE_ID_KEY);
+    localStorage.removeItem(PENDING_RETURN_URL_KEY);
+    console.log('[Tebex] Cleared pending basket operation');
+  } catch (error) {
+    console.error('[Tebex] Error clearing pending basket operation:', error);
+  }
+};
+
+/**
+ * Check if we're on a return page from Tebex authentication
+ * @returns {boolean} True if this is a return from authentication
+ */
+export const isAuthenticationReturn = () => {
+  // Check URL for auth return indicators from Tebex
+  const url = new URL(window.location.href);
+  return url.searchParams.has('tebex_auth') || 
+         url.searchParams.has('tebex_auth_success') ||
+         url.pathname.includes('/auth/return');
+};
+
+/**
+ * Handle authentication return and complete pending operations
+ * @returns {Promise<Object>} Result of the completed operation
+ */
+export const handleAuthenticationReturn = async () => {
+  try {
+    // Check if we have a pending operation stored in localStorage
+    const pendingOpData = localStorage.getItem('tebex_pending_operation');
+    
+    if (!pendingOpData) {
+      console.log('[Tebex] No pending operations found on auth return');
+      return null;
+    }
+    
+    // Parse the pending operation
+    const pendingOperation = JSON.parse(pendingOpData);
+    console.log('[Tebex] Processing pending operation after authentication:', pendingOperation);
+    
+    let result = null;
+    
+    // Handle different operation types
+    switch (pendingOperation.type) {
+      case 'add_package':
+        if (pendingOperation.basketIdent && pendingOperation.packageId) {
+          console.log('[Tebex] Re-attempting to add package after authentication');
+          result = await addPackageToBasket(
+            pendingOperation.basketIdent, 
+            pendingOperation.packageId,
+            pendingOperation.quantity || 1,
+            pendingOperation.returnUrl
+          );
+        }
+        break;
+        
+      case 'remove_package':
+        if (pendingOperation.basketIdent && pendingOperation.packageId) {
+          console.log('[Tebex] Re-attempting to remove package after authentication');
+          result = await removePackageFromBasket(
+            pendingOperation.basketIdent, 
+            pendingOperation.packageId,
+            pendingOperation.returnUrl
+          );
+        }
+        break;
+        
+      case 'checkout':
+        if (pendingOperation.basketIdent) {
+          console.log('[Tebex] Re-attempting checkout after authentication');
+          result = await processCheckout(
+            pendingOperation.basketIdent,
+            pendingOperation.username || '',
+            pendingOperation.edition || 'java'
+          );
+        }
+        break;
+        
+      case 'apply_coupon':
+        if (pendingOperation.basketIdent && pendingOperation.couponCode) {
+          console.log('[Tebex] Re-attempting to apply coupon after authentication');
+          result = await applyCoupon(
+            pendingOperation.basketIdent,
+            pendingOperation.couponCode
+          );
+        }
+        break;
+        
+      default:
+        console.warn('[Tebex] Unknown pending operation type:', pendingOperation.type);
+    }
+    
+    // Clear the pending operation regardless of success
+    localStorage.removeItem('tebex_pending_operation');
+    
+    // Return the result
+    return result;
+  } catch (error) {
+    console.error('[Tebex] Error handling authentication return:', error);
+    // Clear the pending operation on error
+    localStorage.removeItem('tebex_pending_operation');
+    return null;
+  }
+};
+
+/**
  * Add a package to a basket
  * @param {string} basketIdent - Basket identifier
  * @param {string} packageId - Package ID to add
  * @param {number} quantity - Quantity of the package
  * @returns {Promise<Object>} Updated basket
  */
-export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) => {
+export const addPackageToBasket = async (basketIdent, packageId, quantity = 1, returnUrl = window.location.href) => {
   try {
     const isDevMode = isDevelopment && !forceProduction();
     
@@ -263,6 +443,44 @@ export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) =
         quantity: quantity
       })
     });
+
+    // Check for authentication required response (422 error)
+    if (response.status === 422) {
+      const errorData = await response.json();
+      console.log('[Tebex] Authentication error:', errorData);
+      
+      // If the error indicates authentication is required
+      if (errorData?.error?.toLowerCase().includes('login') || 
+          errorData?.error?.toLowerCase().includes('auth')) {
+        console.log('[Tebex] User must authenticate before adding packages to basket');
+        
+        // Store the operation details for after authentication
+        localStorage.setItem('tebex_pending_operation', JSON.stringify({
+          type: 'add_package',
+          basketIdent,
+          packageId,
+          quantity,
+          returnUrl
+        }));
+        
+        // Get authentication links
+        const authLinks = await getBasketAuthLinks(basketIdent, returnUrl);
+        
+        if (authLinks && authLinks.length > 0) {
+          console.log('[Tebex] Redirecting to authentication page:', authLinks[0].url);
+          
+          // Return special object indicating auth redirect
+          return {
+            requires_auth: true,
+            auth_url: authLinks[0].url,
+            message: 'Authentication required before adding to basket'
+          };
+        }
+      }
+      
+      // If it's a different 422 error, just throw it
+      throw new Error(`Failed to add package to basket: ${errorData.error || response.status}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -285,9 +503,10 @@ export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) =
  * Remove a package from a basket
  * @param {string} basketIdent - Basket identifier
  * @param {string} packageId - Package ID to remove
+ * @param {string} returnUrl - URL to return to after authentication
  * @returns {Promise<Object>} Updated basket
  */
-export const removePackageFromBasket = async (basketIdent, packageId) => {
+export const removePackageFromBasket = async (basketIdent, packageId, returnUrl = window.location.href) => {
   try {
     const isDevMode = isDevelopment && !forceProduction();
     
@@ -307,6 +526,43 @@ export const removePackageFromBasket = async (basketIdent, packageId) => {
         package_id: packageId
       })
     });
+
+    // Check for authentication required response (422 error)
+    if (response.status === 422) {
+      const errorData = await response.json();
+      console.log('[Tebex] Authentication error:', errorData);
+      
+      // If the error indicates authentication is required
+      if (errorData?.error?.toLowerCase().includes('login') || 
+          errorData?.error?.toLowerCase().includes('auth')) {
+        console.log('[Tebex] User must authenticate before removing packages from basket');
+        
+        // Store the operation details for after authentication
+        localStorage.setItem('tebex_pending_operation', JSON.stringify({
+          type: 'remove_package',
+          basketIdent,
+          packageId,
+          returnUrl
+        }));
+        
+        // Get authentication links
+        const authLinks = await getBasketAuthLinks(basketIdent, returnUrl);
+        
+        if (authLinks && authLinks.length > 0) {
+          console.log('[Tebex] Redirecting to authentication page:', authLinks[0].url);
+          
+          // Return special object indicating auth redirect
+          return {
+            requires_auth: true,
+            auth_url: authLinks[0].url,
+            message: 'Authentication required before removing from basket'
+          };
+        }
+      }
+      
+      // If it's a different 422 error, just throw it
+      throw new Error(`Failed to remove package from basket: ${errorData.error || response.status}`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -388,18 +644,22 @@ export const getBasket = async (basketIdent) => {
  * @param {string} returnUrl - URL to return to after authentication
  * @returns {Promise<Array>} Auth links
  */
-export const getBasketAuthLinks = async (basketIdent, returnUrl) => {
+export const getBasketAuthLinks = async (basketIdent, returnUrl = window.location.href) => {
   try {
     const isDevMode = isDevelopment && !forceProduction();
     
     if (isDevMode) {
       console.log('[Tebex] Using mock auth links (development mode)');
-      return getMockAuthLinks();
+      return getMockAuthLinks(basketIdent, returnUrl);
     }
 
-    console.log(`[Tebex] Getting auth links for basket ${basketIdent}`);
+    console.log(`[Tebex] Getting auth links for basket ${basketIdent} with return URL ${returnUrl}`);
+    
+    // Encode returnUrl properly
+    const encodedReturnUrl = encodeURIComponent(returnUrl);
+    
     const response = await fetch(
-      `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}/auth?returnUrl=${encodeURIComponent(returnUrl)}`
+      `${BASE_URL}/accounts/${STORE_TOKEN}/baskets/${basketIdent}/auth?returnUrl=${encodedReturnUrl}`
     );
     
     if (!response.ok) {
@@ -409,22 +669,38 @@ export const getBasketAuthLinks = async (basketIdent, returnUrl) => {
     }
     
     const data = await response.json();
-    console.log('[Tebex] Successfully retrieved auth links');
+    console.log('[Tebex] Successfully retrieved auth links:', data);
     return data;
   } catch (error) {
     console.error('[Tebex] Error getting auth links:', error);
     // Return mock auth links in case of error
     console.log('[Tebex] Falling back to mock auth links');
-    return getMockAuthLinks();
+    return getMockAuthLinks(basketIdent, returnUrl);
   }
 };
+
+function getMockAuthLinks(basketIdent, returnUrl) {
+  const mockBasketIdent = basketIdent || `mock-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  
+  // Include returnUrl in the auth URL if provided
+  const authUrl = returnUrl 
+    ? `https://auth.tebex.io/login/minecraft?basket=${mockBasketIdent}&return=${encodeURIComponent(returnUrl)}`
+    : `https://auth.tebex.io/login/minecraft?basket=${mockBasketIdent}`;
+    
+  return [
+    {
+      name: "Minecraft",
+      url: authUrl
+    }
+  ];
+}
 
 /**
  * Process checkout with Minecraft username
  * @param {string} basketIdent - Basket identifier
  * @param {string} username - Minecraft username
  * @param {string} edition - Minecraft edition (java/bedrock)
- * @returns {Promise<Object>} Checkout URL and other information
+ * @returns {Promise<Object>} Checkout information
  */
 export const processCheckout = async (basketIdent, username, edition) => {
   try {
@@ -450,67 +726,26 @@ export const processCheckout = async (basketIdent, username, edition) => {
       const basketResponse = await getBasket(basketIdent);
       
       // Check if we have a valid basket response
-      if (!basketResponse?.data) {
-        console.warn('[Tebex] Invalid basket response, falling back to mock checkout');
-        return getMockCheckout(username, edition);
-      }
-      
-      // Authenticate the basket before checkout
-      console.log('[Tebex] Authenticating basket before checkout');
-      const returnUrl = typeof window !== 'undefined' ? window.location.href : 'https://yoursite.com/checkout';
-      const authResult = await authenticateBasket(basketIdent, returnUrl);
-      
-      if (!authResult.success) {
-        console.error('[Tebex] Basket authentication failed:', authResult.error);
-        return getMockCheckout(username, edition);
-      }
-      
-      console.log('[Tebex] Basket authenticated successfully');
-      
-      // Determine the checkout URL based on authentication results
-      let checkoutUrl;
-      
-      // If we have an auth link from authentication, use it as the primary source
-      if (authResult.primaryAuthLink && authResult.primaryAuthLink.startsWith('https://')) {
-        checkoutUrl = authResult.primaryAuthLink;
-        console.log('[Tebex] Using authentication link for checkout:', checkoutUrl);
-      } 
-      // Fallback to checkout link from basket response
-      else if (basketResponse?.data?.links?.checkout) {
-        checkoutUrl = basketResponse.data.links.checkout;
-        console.log('[Tebex] Using basket checkout link:', checkoutUrl);
+      if (basketResponse?.data?.ident) {
+        const checkoutIdent = basketResponse.data.ident;
+        console.log('[Tebex] Got valid basket ident for checkout:', checkoutIdent);
         
-        // Ensure URL matches the expected format
-        if (!checkoutUrl.startsWith('https://pay.tebex.io/')) {
-          console.warn('[Tebex] Checkout URL from API does not match expected format, modifying to correct format');
-          // Override with correct format
-          checkoutUrl = `https://pay.tebex.io/${basketIdent}`;
-        }
-      } 
-      // Last resort fallback
-      else {
-        console.warn('[Tebex] No checkout URL from auth or basket, using default format');
-        checkoutUrl = `https://pay.tebex.io/${basketIdent}`;
+        // Return checkout data with the basket ident for Tebex.js
+        return {
+          success: true,
+          basketIdent: checkoutIdent,
+          username: username,
+          edition: edition,
+          ident: checkoutIdent, // Used by Tebex.js
+          message: "Checkout ready"
+        };
+      } else {
+        // No valid ident in response, use mock data
+        console.log('[Tebex] No valid ident in basket response, using mock checkout');
+        return getMockCheckout(username, edition);
       }
-      
-      // Add username as a query parameter if not already present
-      if (!checkoutUrl.includes('username=')) {
-        const separator = checkoutUrl.includes('?') ? '&' : '?';
-        checkoutUrl = `${checkoutUrl}${separator}username=${encodeURIComponent(username)}`;
-      }
-      
-      console.log('[Tebex] Final checkout URL:', checkoutUrl);
-      
-      return {
-        success: true,
-        basketIdent: basketIdent,
-        username: username,
-        edition: edition,
-        url: checkoutUrl,
-        message: "Checkout created successfully"
-      };
     } catch (basketError) {
-      console.error('[Tebex] Error during checkout process:', basketError);
+      console.error('[Tebex] Error getting basket for checkout:', basketError);
       // Fall back to mock checkout
       console.log('[Tebex] Error getting basket, using mock checkout');
       return getMockCheckout(username, edition);
@@ -568,26 +803,23 @@ export const applyCoupon = async (basketIdent, couponCode) => {
 };
 
 /**
- * Process checkout with mock data (for development)
- * @param {string} username - Minecraft username for checkout
- * @param {string} game_edition - Game edition (java/bedrock)
- * @returns {Object} Checkout information with URL
+ * Get mock checkout data for development and testing
+ * 
+ * @param {string} username - Minecraft username
+ * @param {string} edition - Minecraft edition (java/bedrock)
+ * @returns {Object} Mock checkout object with checkout ident for Tebex.js instead of URL
  */
-export const getMockCheckout = (username, game_edition) => {
-  console.log('Creating mock checkout for', username, game_edition);
+export const getMockCheckout = (username, edition = 'java') => {
+  const mockBasketIdent = `dev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   
-  // Generate timestamp-based ID to simulate unique checkouts
-  const timestamp = Date.now();
-  const randId = Math.random().toString(36).substring(2, 8);
-  const mockBasketIdent = `mock-basket-${timestamp}-${randId}`;
-  
-  // Return a structure similar to the real API
   return {
-    message: "Checkout created successfully",
-    url: `https://pay.tebex.io/${mockBasketIdent}?username=${encodeURIComponent(username)}`,
-    basket_id: mockBasketIdent,
-    complete: true,
-    development_mode: true // Add a flag to indicate this is a mock checkout
+    status: "success",
+    message: "Checkout ready for development mode",
+    ident: mockBasketIdent, // This is the checkout ident for Tebex.js
+    basketIdent: mockBasketIdent,
+    username: username,
+    edition: edition,
+    development_mode: true
   };
 };
 
@@ -822,16 +1054,6 @@ function getMockBasketById(basketIdent) {
   };
 }
 
-function getMockAuthLinks() {
-  const mockBasketIdent = `mock-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  return [
-    {
-      name: "Minecraft",
-      url: `https://pay.tebex.io/${mockBasketIdent}`
-    }
-  ];
-}
-
 function getMockBasketWithCoupon(basketIdent, couponCode) {
   const mockBasket = getMockBasketWithPackage(basketIdent, "101", 1);
   mockBasket.data.coupons = [{ coupon_code: couponCode }];
@@ -839,53 +1061,4 @@ function getMockBasketWithCoupon(basketIdent, couponCode) {
   mockBasket.data.base_price = mockBasket.data.base_price * 0.9;
   mockBasket.data.total_price = mockBasket.data.total_price * 0.9;
   return mockBasket;
-}
-
-/**
- * Authenticate a basket before checkout
- * @param {string} basketIdent - Basket identifier
- * @param {string} returnUrl - URL to return to after authentication
- * @returns {Promise<Object>} Authentication status and URL
- */
-export const authenticateBasket = async (basketIdent, returnUrl) => {
-  try {
-    console.log(`[Tebex] Authenticating basket ${basketIdent} with return URL ${returnUrl}`);
-    
-    // In development mode, return mock authentication data
-    const isDevMode = isDevelopment && !forceProduction();
-    if (isDevMode) {
-      console.log('[Tebex] Using mock authentication in development mode');
-      return {
-        success: true,
-        authLinks: getMockAuthLinks(),
-        message: "Mock authentication successful"
-      };
-    }
-    
-    // Get auth links for the basket
-    const authLinksResponse = await getBasketAuthLinks(basketIdent, returnUrl);
-    
-    // Validate the response
-    if (!authLinksResponse || !Array.isArray(authLinksResponse) || authLinksResponse.length === 0) {
-      console.error('[Tebex] Invalid or empty auth links response:', authLinksResponse);
-      throw new Error('Failed to get valid authentication links');
-    }
-    
-    console.log('[Tebex] Authentication links retrieved successfully:', authLinksResponse);
-    
-    return {
-      success: true,
-      authLinks: authLinksResponse,
-      // Get the first auth link as the primary one (usually there's only one)
-      primaryAuthLink: authLinksResponse[0]?.url,
-      message: "Authentication links retrieved successfully"
-    };
-  } catch (error) {
-    console.error('[Tebex] Error authenticating basket:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to authenticate basket',
-      message: "Authentication failed"
-    };
-  }
-}; 
+} 

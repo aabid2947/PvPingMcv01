@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiShoppingCart, FiTrash2, FiArrowRight, FiCheck, FiAlertCircle, FiRefreshCw, FiLock } from 'react-icons/fi';
+import { FiX, FiShoppingCart, FiTrash2, FiArrowRight, FiCheck, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import { useCart } from '../contexts/CartContext';
 import { useUser } from '../context/UserContext';
 import { useBasket } from '../contexts/BasketContext';
@@ -23,8 +23,7 @@ function CartModal() {
     isLoading: basketLoading,
     lastAddedItem,
     syncCartWithBasket,
-    basketIdent,
-    authStatus
+    basketIdent
   } = useBasket();
   
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -148,41 +147,6 @@ function CartModal() {
               </div>
             )}
             
-            {/* Authentication status display */}
-            {authStatus && (
-              <div className={`mb-4 p-3 rounded-md ${
-                authStatus.state === 'success' 
-                  ? 'bg-green-500/10 border border-green-500/20' 
-                  : authStatus.state === 'authenticating'
-                    ? 'bg-blue-500/10 border border-blue-500/20'
-                    : 'bg-yellow-500/10 border border-yellow-500/20'
-              }`}>
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    {authStatus.state === 'success' ? (
-                      <FiCheck className="h-5 w-5 text-green-400" />
-                    ) : authStatus.state === 'authenticating' ? (
-                      <FiLock className="h-5 w-5 text-blue-400" />
-                    ) : (
-                      <FiAlertCircle className="h-5 w-5 text-yellow-500" />
-                    )}
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-200">
-                      {authStatus.state === 'success' 
-                        ? 'Authentication Complete' 
-                        : authStatus.state === 'authenticating'
-                          ? 'Authenticating...'
-                          : 'Authentication Issue'}
-                    </h3>
-                    <div className="mt-1 text-sm text-gray-300">
-                      <p>{authStatus.message}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {/* Basket error message */}
             {basketError && (
               <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-md">
@@ -281,17 +245,12 @@ function CartModal() {
                     <button
                       onClick={handleCheckout}
                       className="py-2 px-4 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center"
-                      disabled={cart.length === 0 || pendingBasketOperations.length > 0 || (authStatus?.state === 'authenticating')}
+                      disabled={cart.length === 0 || pendingBasketOperations.length > 0}
                     >
                       {pendingBasketOperations.length > 0 ? (
                         <>
                           <FiRefreshCw className="animate-spin mr-2" />
                           Syncing...
-                        </>
-                      ) : authStatus?.state === 'authenticating' ? (
-                        <>
-                          <FiLock className="mr-2" />
-                          Authenticating...
                         </>
                       ) : (
                         <>

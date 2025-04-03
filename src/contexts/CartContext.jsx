@@ -52,6 +52,11 @@ export function CartProvider({ children }) {
           if (useBasket) {
             try {
               basketContext = useBasket();
+              console.log('BasketContext connected in CartContext:', {
+                hasUsername: !!basketContext.username,
+                hasBasketIdent: !!basketContext.basketIdent,
+                hasInitializedBasket: basketContext.hasInitializedBasket
+              });
             } catch (error) {
               console.warn('BasketContext not yet available, will retry');
               return; // Will retry on next render
@@ -68,6 +73,44 @@ export function CartProvider({ children }) {
         return;
       }
       
+      // Check if we have a username before proceeding
+      if (!basketContext.username) {
+        console.warn('No username available for basket operations, will retry later');
+        return; // Will retry on next render once username is set
+      }
+      
+      // Check if we have a valid basket ID
+      if (!basketContext.basketIdent && !basketContext.hasInitializedBasket) {
+        // Try to initialize a basket first
+        try {
+          const basketId = await basketContext.getOrCreateBasket();
+          if (!basketId) {
+            console.warn('Could not create or get basket, will retry later');
+            return; // Will retry on next render
+          }
+        } catch (error) {
+          console.error('Error initializing basket:', error);
+          return;
+        }
+      }
+      
+      // Check if we can get the current basket data
+      let currentBasket = null;
+      try {
+        // Only try to get basket if we have an identifier
+        if (basketContext.basketIdent) {
+          // Check if basket data is already loaded in context
+          if (basketContext.basketData && basketContext.basketData.packages) {
+            currentBasket = basketContext.basketData;
+          } else {
+            // Fetch basket data if not already loaded
+            currentBasket = await basketContext.fetchBasket(basketContext.basketIdent);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching current basket data:', error);
+      }
+      
       // Process each pending operation
       const operations = [...pendingBasketOperations];
       setPendingBasketOperations([]); // Clear pending operations
@@ -75,8 +118,18 @@ export function CartProvider({ children }) {
       for (const op of operations) {
         try {
           if (op.type === 'add') {
-            await basketContext.addPackageToBasket(op.itemId, 1);
-            console.log(`Successfully added item ${op.itemId} to Tebex basket`);
+            // Check if the item is already in the basket
+            const alreadyInBasket = currentBasket && 
+                                   currentBasket.packages && 
+                                   currentBasket.packages.some(pkg => pkg.id === op.itemId);
+            
+            if (alreadyInBasket) {
+              console.log(`Item ${op.itemId} already in basket, skipping add operation`);
+            } else {
+              // Item not in basket, add it
+              await basketContext.addPackageToBasket(op.itemId, 1);
+              console.log(`Successfully added item ${op.itemId} to Tebex basket`);
+            }
           } else if (op.type === 'remove') {
             await basketContext.removePackageFromBasket(op.itemId);
             console.log(`Successfully removed item ${op.itemId} from Tebex basket`);
@@ -180,6 +233,11 @@ export function CartProvider({ children }) {
   // Connect to the basket context
   const connectToBasketContext = (context) => {
     basketContext = context;
+    console.log('CartContext connected to BasketContext:', {
+      hasUsername: !!context.username, 
+      hasBasketIdent: !!context.basketIdent,
+      hasInitializedBasket: context.hasInitializedBasket
+    });
   };
   
   // Context value

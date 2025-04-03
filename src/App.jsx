@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { StoreProvider } from './pages/Store';
@@ -17,6 +17,39 @@ import HeroSection from "./pages/HeroSection.jsx"
 import OriginPass from './pages/OriginPass'
 import pvping from "./assets/thumb_logo.png"
 import NotFound from './pages/NotFound'
+import * as tebexService from './utils/tebexHeadlessService';
+
+// Authentication Return Handler Component
+const AuthReturnHandler = () => {
+  useEffect(() => {
+    const handleAuthReturn = async () => {
+      // Check if this is a return from authentication
+      const isAuthReturn = 
+        window.location.search.includes('tebex_auth') || 
+        window.location.search.includes('auth_return');
+        
+      if (isAuthReturn) {
+        console.log('Detected return from Tebex authentication, processing...');
+        
+        try {
+          // Process the pending operation
+          await tebexService.handleAuthenticationReturn();
+          
+          // Clean up the URL
+          const cleanUrl = window.location.pathname + 
+                         window.location.search.replace(/[?&]tebex_auth[^&]*/, '').replace(/[?&]auth_return[^&]*/, '');
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch (error) {
+          console.error('Error handling authentication return:', error);
+        }
+      }
+    };
+    
+    handleAuthReturn();
+  }, []);
+  
+  return null; // This component doesn't render anything
+};
 
 // Universal Footer Component
 const FooterComponent = () => {
@@ -50,6 +83,9 @@ function AppContent() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Authentication Return Handler */}
+      <AuthReturnHandler />
+      
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={

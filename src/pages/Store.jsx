@@ -345,14 +345,16 @@ export default function Store() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [basketError, setBasketError] = useState(null);
+  const [isContextConnected, setIsContextConnected] = useState(false);
   
-  // Connect the cart context to the basket context
+  // Connect the cart context to the basket context - only once
   useEffect(() => {
-    if (basketContext) {
+    if (basketContext && !isContextConnected) {
       connectToBasketContext(basketContext);
       console.log('Connected Cart context to Basket context');
+      setIsContextConnected(true);
     }
-  }, [basketContext, connectToBasketContext]);
+  }, [basketContext, connectToBasketContext, isContextConnected]);
   
   // Check for just-logged-in state based on URL parameter
   useEffect(() => {
@@ -402,7 +404,8 @@ export default function Store() {
     }
     
     // If user is not logged in (no username), show login modal first
-    if (!username) {
+    // Don't initialize basket or add to cart yet
+    if (!username || username.trim() === '') {
       setSelectedPackage(pkg);
       setShowLoginModal(true);
       return;
@@ -421,20 +424,42 @@ export default function Store() {
         }
         
         console.log(`Adding item to cart with valid basket ID: ${basketId}`);
+        
+        // Format the package data for the cart
+        const cartItem = {
+          id: pkg.id,
+          name: pkg.name,
+          price: pkg.price,
+          image: pkg.image || null,
+          description: pkg.description || ''
+        };
+        
+        // Add to cart (this will trigger the pending operations in CartContext)
+        try {
+          // First try to add the package to the basket
+          const addResult = await basketContext.addPackageToBasket(pkg.id, 1);
+          
+          // If this succeeds (no auth redirect), add to cart
+          if (addResult) {
+            console.log('Package added to basket, adding to cart:', cartItem);
+            addToCart(cartItem);
+          } else {
+            console.log('Package not added to cart - possible auth redirect or error');
+          }
+        } catch (basketError) {
+          console.error('Error adding package to basket:', basketError);
+          setBasketError('Failed to add item to your shopping cart. Please try again.');
+        }
+      } else {
+        // No basket context, just add to cart
+        addToCart({
+          id: pkg.id,
+          name: pkg.name,
+          price: pkg.price,
+          image: pkg.image || null,
+          description: pkg.description || ''
+        });
       }
-      
-      // Format the package data for the cart
-      const cartItem = {
-        id: pkg.id,
-        name: pkg.name,
-        price: pkg.price,
-        image: pkg.image || null,
-        description: pkg.description || ''
-      };
-      
-      // Add to cart (this will trigger the pending operations in CartContext)
-      addToCart(cartItem);
-      
     } catch (error) {
       console.error('Error during add to cart:', error);
       setBasketError('Failed to add item to cart. Please try again.');
@@ -449,30 +474,30 @@ export default function Store() {
     // Close the modal
     setShowLoginModal(false);
     
-    // If we had a selected package waiting, add it to cart now
-    if (selectedPackage) {
-      const cartItem = {
-        id: selectedPackage.id,
-        name: selectedPackage.name,
-        price: selectedPackage.price,
-        image: selectedPackage.image || null,
-        description: selectedPackage.description || ''
-      };
-      
-      // Add item to cart
-      addToCart(cartItem);
-      
-      // Clear the selected package
-      setSelectedPackage(null);
-      
-      // Show refreshing state
-      setIsRefreshing(true);
-      
-      // Force a complete page refresh to ensure all contexts are properly updated
-      // Add a parameter to the URL to indicate this is a post-login refresh
-      window.location.href = window.location.pathname + '?just_logged_in=true';
-    }
+    // Show refreshing state
+    setIsRefreshing(true);
+    
+    // Simply redirect to the store page with a parameter to indicate the user just logged in
+    // This will ensure contexts are properly initialized with the new username
+    window.location.href = window.location.pathname + '?just_logged_in=true';
   };
+
+  // Update post-login actions to just welcome the user, not add items
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const justLoggedIn = queryParams.get('just_logged_in');
+    
+    if (justLoggedIn === 'true') {
+      // Remove the parameter to avoid infinite refreshes
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      // Just open cart to show welcome message after login
+      setTimeout(() => {
+        openCart();
+      }, 500);
+    }
+  }, [openCart]);
 
   // Render a package card
   const renderPackageCard = (pkg) => {
@@ -491,14 +516,14 @@ export default function Store() {
             <img 
               src={pkg.image} 
               alt={pkg.name} 
-              className="w-full h-48 object-contain rounded-md"
+              className="w-full h-48 object-cover rounded-md"
             />
           </div>
         )}
         
         <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-        {/* <p className="text-gray-400 mb-4 text-sm">{pkg.description}</p>
-         */}
+        {/* <p className="text-gray-400 mb-4 text-sm">{pkg.description}</p> */}
+        
         <div className="text-2xl font-bold text-purple-500 mb-6">
           {pkg.price}
         </div>

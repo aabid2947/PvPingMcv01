@@ -14,13 +14,59 @@ export default function CheckoutModal({ isOpen, onClose }) {
     checkoutUrl, 
     isProcessingCheckout,
     resetBasket,
-    developmentCheckout
+    developmentCheckout,
+    basketData,
+    fetchBasket,
+    basketIdent
   } = useBasket();
   
   const [username, setUsername] = useState(savedUsername || '');
   const [edition, setEdition] = useState('java');
   const [formErrors, setFormErrors] = useState({});
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [itemCount, setItemCount] = useState(0);
+  const [orderTotal, setOrderTotal] = useState('0.00');
+  const [hasInitiallyFetchedBasket, setHasInitiallyFetchedBasket] = useState(false);
+  
+  // Get basket data when modal opens
+  useEffect(() => {
+    // Only fetch basket data once when the modal opens
+    if (isOpen && basketIdent && !hasInitiallyFetchedBasket) {
+      console.log('Fetching basket data once on modal open');
+      
+      setHasInitiallyFetchedBasket(true);
+      
+      fetchBasket(basketIdent).then(data => {
+        console.log('Initial basket fetch complete');
+      }).catch(err => {
+        console.error('Error fetching basket on modal open:', err);
+      });
+    }
+    
+    // Reset the fetch flag when modal closes
+    if (!isOpen) {
+      setHasInitiallyFetchedBasket(false);
+    }
+  }, [isOpen, basketIdent]); // Don't include fetchBasket in dependencies to avoid loop
+  
+  // Update item count and order total when basketData changes
+  useEffect(() => {
+    if (basketData && basketData.packages) {
+      setItemCount(basketData.packages.length);
+      
+      // Calculate total from basket data
+      if (basketData.total) {
+        setOrderTotal(basketData.total);
+      }
+    } else if (cart && cart.length > 0) {
+      // Fallback to cart data if basket data is not available
+      setItemCount(cart.length);
+      setOrderTotal(getCartTotal());
+    } else {
+      setItemCount(0);
+      setOrderTotal('0.00');
+    }
+  }, [basketData, cart, getCartTotal]);
   
   // Reset form state when modal is opened
   useEffect(() => {
@@ -47,59 +93,12 @@ export default function CheckoutModal({ isOpen, onClose }) {
   useEffect(() => {
     let redirectTimer = null;
     
-    if (checkoutUrl) {
-      console.log('Checkout URL available, preparing to redirect:', checkoutUrl);
-      
-      // Log URL format validation for debugging
-      if (checkoutUrl.startsWith('https://pay.tebex.io/')) {
-        console.log('✅ Correct Tebex checkout URL format detected');
-      } else if (checkoutUrl.startsWith('https://ident.tebex.io/')) {
-        console.log('✅ Tebex authentication URL detected - this will redirect to payment after auth');
-      } else {
-        console.warn('⚠️ Checkout URL does not match expected formats');
-      }
-      
-      setCheckoutComplete(true);
-      
-      // Check if we're in development mode
-      const isDev = process.env.NODE_ENV === 'development' || 
-                   window.location.hostname === 'localhost' || 
-                   window.location.hostname === '127.0.0.1';
-      
-      const isMockUrl = (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'));
-      
-      if ((isDev && isMockUrl) || developmentCheckout) {
-        console.log('Development mode or mock URL detected - simulating redirect');
-        // In development with mock URLs, we don't actually redirect
-        // This prevents navigating away from the app during testing
-        
-        // Just log that we would redirect in production
-        console.log('In production, would redirect to:', checkoutUrl);
-        
-        // We can display a message here if needed
-        redirectTimer = setTimeout(() => {
-          // After "simulated" checkout, reset so user can continue testing
-          clearForm();
-        }, 3000);
-      } else {
-        // Regular production redirect
-        redirectTimer = setTimeout(() => {
-          console.log('Redirecting to checkout URL:', checkoutUrl);
-          try {
-            window.location.assign(checkoutUrl);
-            
-            // Fallback
-            setTimeout(() => {
-              if (window.location.href !== checkoutUrl) {
-                window.location.href = checkoutUrl;
-              }
-            }, 500);
-          } catch (error) {
-            console.error('Error during redirection:', error);
-            window.open(checkoutUrl, '_self');
-          }
-        }, 1000);
-      }
+    if (checkoutComplete && !checkoutUrl) {
+      // If checkout is complete but there's no checkout ident/URL (old flow fallback)
+      // We just reset the form after a few seconds
+      redirectTimer = setTimeout(() => {
+        clearForm();
+      }, 3000);
     }
     
     // Cleanup function to clear timeout
@@ -108,7 +107,14 @@ export default function CheckoutModal({ isOpen, onClose }) {
         clearTimeout(redirectTimer);
       }
     };
-  }, [checkoutUrl, resetBasket, developmentCheckout]);
+  }, [checkoutComplete, checkoutUrl]);
+
+  // When checkout is successful, set checkout complete
+  useEffect(() => {
+    if (checkoutUrl) {
+      setCheckoutComplete(true);
+    }
+  }, [checkoutUrl]);
   
   // Validate form before submission
   const validateForm = () => {
@@ -147,54 +153,30 @@ export default function CheckoutModal({ isOpen, onClose }) {
   // If the modal is not open, don't render anything
   if (!isOpen) return null;
   
-  // Show the mock data message when appropriate in checkout complete view
+  // Show the checkout complete view
   const checkoutCompleteView = (
     <div className="flex flex-col items-center justify-center py-6 space-y-4">
       <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
         <Check size={32} className="text-green-500" />
       </div>
       <h3 className="text-lg font-medium text-white">
-        {(developmentCheckout || checkoutUrl?.includes('example.com'))
-          ? "Test Checkout Complete"
-          : checkoutUrl?.includes('ident.tebex.io')
-            ? "Redirecting to authentication..."
-            : "Redirecting to payment..."}
+        {developmentCheckout ? "Test Checkout Complete" : "Checkout Initiated"}
       </h3>
       <p className="text-neutral-400 text-center text-sm">
-        {(developmentCheckout || checkoutUrl?.includes('example.com'))
-          ? "This is a test checkout. In production, you would be redirected to the payment page. The modal will close in a moment."
-          : checkoutUrl?.includes('ident.tebex.io')
-            ? "You will be redirected to authenticate your Minecraft account before proceeding to payment. This ensures your purchase is linked to the correct account."
-            : "You will be redirected to the payment page in a moment. If you are not redirected, click the button below."}
+        {developmentCheckout 
+          ? "This is a test checkout. The Tebex checkout would normally appear in an overlay."
+          : "The checkout form will appear in a moment. Please complete your payment to receive your items."}
       </p>
-      <a 
-        href={checkoutUrl} 
-        onClick={(e) => {
-          e.preventDefault();
-          
-          // Check if we're in development mode
-          const isDev = process.env.NODE_ENV === 'development' || 
-                       window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1';
-          
-          if ((isDev && checkoutUrl && (checkoutUrl.includes('mock') || checkoutUrl.includes('example.com'))) || developmentCheckout) {
-            console.log('Development mode or mock URL detected - simulating manual redirect to:', checkoutUrl);
-            // For development, just log the redirect but don't navigate away
-            alert('DEVELOPMENT MODE: In production, this would redirect to:\n' + checkoutUrl);
-          } else if (checkoutUrl) {
-            // Regular production redirect
-            console.log('Manual redirect to:', checkoutUrl);
-            window.location.assign(checkoutUrl);
-          }
-        }}
-        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-      >
-        {(developmentCheckout || checkoutUrl?.includes('example.com'))
-          ? "Simulate Payment Redirect"
-          : checkoutUrl?.includes('ident.tebex.io')
-            ? "Continue to Authentication"
-            : "Continue to Payment"}
-      </a>
+      
+      {/* No need for manual redirection button with Tebex.js */}
+      {developmentCheckout && (
+        <button 
+          onClick={() => clearForm()}
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+        >
+          Close Test Checkout
+        </button>
+      )}
     </div>
   );
   
@@ -223,13 +205,13 @@ export default function CheckoutModal({ isOpen, onClose }) {
                 <h3 className="text-lg font-medium text-white mb-2">Order Summary</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Items ({cart.length}):</span>
-                    <span className="text-white">${getCartTotal()}</span>
+                    <span className="text-gray-400">Items ({itemCount}):</span>
+                    <span className="text-white">${orderTotal}</span>
                   </div>
                   {/* You could add tax, discounts, etc. here */}
                   <div className="flex justify-between font-bold border-t border-gray-700 pt-2 mt-2">
                     <span className="text-white">Total:</span>
-                    <span className="text-purple-500">${getCartTotal()}</span>
+                    <span className="text-purple-500">${orderTotal}</span>
                   </div>
                 </div>
               </div>
@@ -270,38 +252,33 @@ export default function CheckoutModal({ isOpen, onClose }) {
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio text-purple-600"
-                        name="edition"
                         value="java"
                         checked={edition === 'java'}
                         onChange={() => setEdition('java')}
+                        className="w-4 h-4 text-purple-600 border-gray-700 focus:ring-purple-500"
                         disabled={isProcessingCheckout}
                       />
-                      <span className="ml-2 text-white">Java</span>
+                      <span className="ml-2 text-gray-300">Java Edition</span>
                     </label>
                     <label className="inline-flex items-center">
                       <input
                         type="radio"
-                        className="form-radio text-purple-600"
-                        name="edition"
                         value="bedrock"
                         checked={edition === 'bedrock'}
                         onChange={() => setEdition('bedrock')}
+                        className="w-4 h-4 text-purple-600 border-gray-700 focus:ring-purple-500"
                         disabled={isProcessingCheckout}
                       />
-                      <span className="ml-2 text-white">Bedrock</span>
+                      <span className="ml-2 text-gray-300">Bedrock Edition</span>
                     </label>
                   </div>
-                  {formErrors.edition && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.edition}</p>
-                  )}
                 </div>
                 
                 <div className="pt-2">
                   <button
                     type="submit"
                     className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isProcessingCheckout}
+                    disabled={isProcessingCheckout || isLoading || itemCount === 0}
                   >
                     {isProcessingCheckout ? (
                       <>
