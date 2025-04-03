@@ -8,7 +8,7 @@ import arrow from "../assets/arrow.png"
 import { useNavigate } from "react-router-dom";
 import { getAllPosts } from "../utils/markdown";
 import JoinDiscord from "../components/JoinDiscord";
-import PlayerGuide from "../components/PlayerGuide";
+import PlayerGuide from "./PlayerGuide";
 
 // News card component with hover animation and link to blog detail
 const NewsCard = ({ post }) => {

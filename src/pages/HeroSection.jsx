@@ -7,6 +7,8 @@ import heroSectionBg from "../assets/herosection bg.png";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import blue from "../assets/blue.svg"
+import PlayerGuide from "./PlayerGuide";
+
 import green from "../assets/green.svg"
 
 export default function OriginMC() {
@@ -19,6 +21,7 @@ export default function OriginMC() {
   const menuRef = useRef(null);
   const hamburgerRef = useRef(null);
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
   // Check if we're on the home page
   const isHomePage = location.pathname === '/';
@@ -61,6 +64,10 @@ export default function OriginMC() {
       try {
         setIsDiscordLoading(true);
         const response = await axios.get('https://discord.com/api/v9/invites/eSq2fk2?with_counts=true&with_expiration=true');
+
+        if (!response.data || (!response.data.approximate_presence_count && !response.data.approximate_member_count)) {
+          setDiscordCount(642); // Fallback value
+        }
 
         if (response.data && response.data.approximate_presence_count) {
           setDiscordCount(response.data.approximate_presence_count);
@@ -327,6 +334,7 @@ export default function OriginMC() {
             </div>
           </div>
         </div>
+          <PlayerGuide isOpen={isOpen} onClose={() => setIsOpen(false)}  />
 
         {/* Video and Ready to Play Section - Only shown on home page */}
         {isHomePage && (
@@ -393,6 +401,7 @@ export default function OriginMC() {
                     style={{
                       clipPath: "polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%)"
                     }}
+                    onClick={() => setIsOpen(true)}
                   >
                     PLAY NOW
                   </button>

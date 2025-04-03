@@ -5,6 +5,7 @@ import { StoreProvider } from './pages/Store';
 import { CartProvider } from './contexts/CartContext';
 import { BasketProvider } from './contexts/BasketContext';
 import CartModal from './components/CartModal';
+import PlayerGuide from './pages/PlayerGuide'
 import './index.css'
 import Home from './pages/Home'
 import BlogOverview from './pages/BlogOverview'
@@ -109,6 +110,14 @@ function AppContent() {
               <HeroSection />
               <div className="bg-[#13141d] mt-[-30px] w-full">
                 <BlogDetail />
+              </div>
+            </div>
+          } />
+            <Route path="/player-guide" element={
+            <div className="w-full">
+              <HeroSection />
+              <div className="bg-[#13141d] mt-[-30px] w-full">
+                <PlayerGuide />
               </div>
             </div>
           } />

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import JavaTutorialPopup from  "../components/java-tutorial-popup"
 
 
-export default function PlayerGuide({ isOpen, onClose }) {
+export default function PlayerGuide({ isOpen, onClose}) {
   const [selectedEdition, setSelectedEdition] = useState(null);
-
+  const [showJavaTutorial, setShowJavaTutorial] = useState(false);
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e) => {
@@ -90,20 +91,14 @@ export default function PlayerGuide({ isOpen, onClose }) {
               </div>
             </div>
           </div>
-
+       
           {/* Connection Instructions */}
           {selectedEdition && (
             <div className="mt-8 p-6 bg-[#1D1E29AB] rounded-lg">
               <h3 className="text-xl font-bold text-white mb-4">Connection Instructions</h3>
               {selectedEdition === "java" ? (
-                <div className="space-y-4">
-                  <p className="text-gray-300">1. Open Minecraft Java Edition</p>
-                  <p className="text-gray-300">2. Click on "Multiplayer"</p>
-                  <p className="text-gray-300">3. Click "Add Server"</p>
-                  <p className="text-gray-300">4. Enter the server address: <span className="text-blue-400">play.pvpingmc.net</span></p>
-                  <p className="text-gray-300">5. Click "Done" and then "Join Server"</p>
-                </div>
-              ) : (
+        <JavaTutorialPopup onBack={() => setShowJavaTutorial(false)} />
+      ): (
                 <div className="space-y-4">
                   <p className="text-gray-300">1. Open Minecraft Bedrock Edition</p>
                   <p className="text-gray-300">2. Click on "Play"</p>
