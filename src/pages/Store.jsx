@@ -334,6 +334,7 @@ export default function Store() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [basketError, setBasketError] = useState(null);
   const [isContextConnected, setIsContextConnected] = useState(false);
+  const [loadingPackageId, setLoadingPackageId] = useState(null); // Track which package is being added to cart
   
   // Connect the cart context to the basket context - only once
   useEffect(() => {

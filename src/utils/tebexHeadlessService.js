@@ -194,8 +194,15 @@ export const createBasket = async (completeUrl, cancelUrl, username) => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(basketData)
+      body:JSON.stringify({
+        "complete_url": completeUrl,
+        "cancel_url": cancelUrl,
+        "complete_auto_redirect": true,
+        "username":username
+      })
     });
+
+  console.log(response.json().data)
     
     if (!response.ok) {
       throw new Error(`Failed to create basket: ${response.status}`);
@@ -402,7 +409,7 @@ export const addPackageToBasket = async (basketIdent, packageId, quantity = 1) =
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        package_id: packageId,
+        package_id: 3307112,
         quantity: quantity
       })
     });
