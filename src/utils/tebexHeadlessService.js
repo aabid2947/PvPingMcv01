@@ -27,7 +27,7 @@ const forceProduction = () => {
 
 // Check if we're in production mode
 export const isProduction = () => {
-  return !isDevelopment || forceProduction();
+  return true;
 };
 
 // Check if we should use mock data
